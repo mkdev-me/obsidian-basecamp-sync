@@ -6,7 +6,7 @@ Automated tests run without credentials and do not write to a real Basecamp acco
 
 Desktop smoke check on 2026-09-07: the built plugin loaded successfully in Obsidian 1.13.7 on macOS using an isolated two-note test vault. Its native settings, registered commands, selected-note preview and formatted-content preview were exercised in the real app. Properties and private scratch comments were absent from the rendered preview. This check did not connect to or write to Basecamp.
 
-The mkdev OAuth registration and hosted login service have **not** been provisioned. Physical iOS/Android behavior, real Basecamp HTML normalization and end-to-end live publication must be checked before a public stable release. Do not claim those checks passed merely because the bundle compiles or mocks pass.
+The mkdev OAuth app and hosted login service were provisioned on 2026-09-07. HTTPS `/health` returns 200, login start points to the registered app and exact callback, and malformed requests are rejected. Terraform reports no changes after deployment. These checks do not authorize a Basecamp account or prove token renewal. Physical iOS/Android behavior, real Basecamp HTML normalization and end-to-end live publication must be checked before a public stable release. Do not claim those checks passed merely because the bundle compiles or mocks pass.
 
 ## Private BRAT releases
 
@@ -23,7 +23,7 @@ A draft visible to a maintainer is insufficient for distribution to testers. BRA
 
 ## Before the first community submission
 
-- [ ] Register and deploy the shared integration using [authentication.md](authentication.md).
+- [x] Register and deploy the shared integration using [authentication.md](authentication.md).
 - [ ] Verify the service, set its real URL in `DEFAULT_BROKER_URL`, and rebuild. Otherwise clearly release as personal-integration-only and update the default login method accordingly.
 - [ ] Complete the real-client acceptance tests below, recording app/OS versions and date.
 - [ ] Review README, privacy policy, license, screenshots and the callback/service deployment instructions.

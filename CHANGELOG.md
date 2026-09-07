@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1
+
+- Coalesce repeated login callbacks so each authorization code is exchanged once per pending login.
+- Use the deployed stateless mkdev login service; remove the duplicate Node server implementation.
+- Document the live shared integration and how to enter its service URL during beta testing.
+- Development pre-release: real desktop/iOS login, renewal and Basecamp publication acceptance remain pending. The built-in shared service URL remains blank.
+
 ## 0.1.0
 
 - Initial one-way sync from selected Obsidian notes to Basecamp documents.
