@@ -38,6 +38,7 @@ async function brokerRequest<T>(url: string, body: object): Promise<T> {
 
 export class Auth {
   private refreshing?: Promise<string>;
+  private completing?: { state: string; promise: Promise<void> };
   private generation = 0;
   constructor(private readonly app: App, private readonly settings: () => Settings) {}
 
@@ -101,6 +102,14 @@ export class Auth {
     if (!pending || pending.expires < Date.now() || params.state !== pending.state)
       throw new Error('This login callback is expired or belongs to another device. Start connecting again.');
     if (params.error) throw new Error('Basecamp authorization was cancelled.');
+    if (this.completing?.state === pending.state) return this.completing.promise;
+    const promise = this.complete(pending, params);
+    this.completing = { state: pending.state, promise };
+    try { await promise; }
+    finally { if (this.completing?.promise === promise) this.completing = undefined; }
+  }
+
+  private async complete(pending: Pending, params: Record<string, string>): Promise<void> {
     const token = pending.mode === 'shared'
       ? await brokerRequest<OAuthToken>(`${pending.broker}/exchange`, { ticket: params.ticket, verifier: pending.verifier })
       : await exchangeCode({ tokenEndpoint: TOKEN_ENDPOINT, clientId: pending.clientId,

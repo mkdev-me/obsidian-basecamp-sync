@@ -51,6 +51,29 @@ describe('device-local authentication', () => {
     await restarted.auth.callback({ code: 'fake', state: url.searchParams.get('state')! });
     expect(restarted.auth.connected()).toBe(true);
   });
+  it.each(['own', 'shared'] as const)('exchanges concurrent %s callbacks only once', async mode => {
+    const { auth } = setup(mode);
+    requestUrl.mockResolvedValue(response({ authorizationUrl: 'https://launchpad.37signals.com/authorization/new' }));
+    const url = new URL(await auth.start());
+    const sent = requestUrl.mock.calls[0]?.[0];
+    const state = mode === 'shared'
+      ? JSON.parse(new TextDecoder().decode(sent!.body)).state
+      : url.searchParams.get('state');
+    requestUrl.mockClear();
+    let finish!: (value: unknown) => void;
+    let started!: () => void;
+    const ready = new Promise<void>(resolve => { started = resolve; });
+    requestUrl.mockImplementation(() => { started(); return new Promise(resolve => { finish = resolve; }); });
+    const params = { state, code: 'code', ticket: 'encrypted-ticket' };
+    const attempts = [auth.callback(params), auth.callback(params), auth.callback(params)];
+    await ready;
+    expect(requestUrl).toHaveBeenCalledTimes(1);
+    finish(response(mode === 'shared'
+      ? { accessToken: 'fresh', tokenType: 'Bearer', expiresAt: new Date(Date.now() + 3600_000).toISOString() }
+      : { access_token: 'fresh', token_type: 'Bearer', expires_in: 3600 }));
+    await Promise.all(attempts);
+    expect(await auth.accessToken()).toBe('fresh');
+  });
   it('refreshes concurrently only once and preserves a refresh token omitted by the server', async () => {
     const { auth, secrets } = setup();
     secrets.set('basecamp-sync-session', JSON.stringify({ mode: 'own', clientId: 'my-client', clientSecretName: 'my-client',
