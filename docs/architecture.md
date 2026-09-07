@@ -10,7 +10,7 @@ The runtime consists of a small Obsidian shell around a testable one-way sync en
 - `src/basecamp.ts`: the official SDK's typed document, vault, project and attachment services.
 - `src/transport.ts` / `sdk-fetch.ts`: Obsidian `requestUrl` adapted to Fetch, ETag revalidation and small mobile compatibility helpers.
 - `src/auth.ts`: SDK OAuth helpers, device-local credentials, callback state validation and single-flight refresh.
-- `broker/server.mjs`: optional single-process, bounded, short-lived OAuth handoff service for a shared integration.
+- The stateless shared-login Worker lives in `services/basecamp-obsidian-sync` in [fodoj-com](https://github.com/FJCorp/fodoj-com). This repository keeps the static `broker/callback.html` for personal integrations.
 
 ## Stored state
 
