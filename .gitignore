@@ -1,0 +1,12 @@
+node_modules/
+main.js
+main.js.map
+build-meta.json
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+.DS_Store
+data.json
+*.log

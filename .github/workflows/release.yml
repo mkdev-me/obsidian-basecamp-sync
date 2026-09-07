@@ -1,0 +1,28 @@
+name: Draft release
+on:
+  push:
+    tags: ['[0-9]+.[0-9]+.[0-9]+']
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run package
+      - name: Verify tag and manifest agree
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: node -e 'if (JSON.parse(require("fs").readFileSync("manifest.json")).version !== process.env.RELEASE_TAG) process.exit(1)'
+      - name: Create a draft with installable assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release create "$RELEASE_TAG" dist/basecamp-sync/main.js dist/basecamp-sync/manifest.json dist/basecamp-sync/styles.css dist/*.zip --draft --verify-tag --title "$RELEASE_TAG" --notes-file CHANGELOG.md

@@ -1,0 +1,8 @@
+.basecamp-sync-preview {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: var(--size-4-4);
+  overflow-wrap: anywhere;
+}
+.basecamp-sync-preview div { margin-block: 0.6em; }
+.basecamp-sync-preview pre { overflow-x: auto; white-space: pre-wrap; }

@@ -1,0 +1,222 @@
+import { describe, expect, it, vi } from 'vitest';
+import { DEFAULT_SETTINGS, type Binding, type Note, parseBinding, stripFrontmatter } from '../src/model';
+import type { Gateway, RemoteDocument } from '../src/basecamp';
+import { selection } from '../src/selection';
+import { renderNote } from '../src/render';
+import { remoteHash, SyncEngine } from '../src/sync';
+
+const settings = { ...DEFAULT_SETTINGS, accountId: '1', projectId: '2', vaultId: '3', includes: ['Work'] };
+const render = (note: Note) => renderNote(note.markdown, { sourceUrl: `obsidian://open?file=${note.path}`,
+  recoveryUrl: note.binding ? `https://3.basecamp.com/1/buckets/2/vaults/3?basecamp-sync-id=${note.binding.id}` : undefined,
+  resolve: async () => ({ url: 'https://example.com/note' }) });
+
+function setup() {
+  const note: Note = { path: 'Work/Plan.md', title: 'Plan', markdown: '# Hello\n\nA **bold** plan.' };
+  const documents = new Map<number, RemoteDocument>();
+  const api: Gateway = {
+    validateDestination: vi.fn(async () => {}),
+    getDocument: vi.fn(async id => { if (!documents.has(id)) throw new Error('Not found'); return documents.get(id)!; }),
+    listDocuments: vi.fn(async () => [...documents.values()]),
+    createDocument: vi.fn(async (_vault, title, content) => {
+      const document = { id: 10, title, content, bucket: { id: 2 }, status: 'active' };
+      documents.set(10, document); return document;
+    }),
+    updateDocument: vi.fn(async (id, title, content) => {
+      const document = { id, title, content, bucket: { id: 2 }, status: 'active' };
+      documents.set(id, document); return document;
+    }),
+    listFolders: vi.fn(async () => []), createFolder: vi.fn(async (_parent, title) => ({ id: 4, title })),
+    upload: vi.fn(async () => 'attachment'),
+  };
+  const save = vi.fn(async (_path: string, binding: Binding) => { note.binding = { ...binding }; });
+  const host = { read: async () => ({ ...note }), saveBinding: save, render: async (note: Note) => render(note) };
+  return { note, api, save, documents, engine: new SyncEngine(host, api, settings), host };
+}
+
+describe('selection and metadata', () => {
+  it('selects nothing by default and respects folder boundaries', () => {
+    expect(selection([], [])('Work/Plan.md')).toBe(false);
+    const matches = selection(['Work'], ['Work/Private']);
+    expect(matches('Work/Plan.md')).toBe(true);
+    expect(matches('Workish/Plan.md')).toBe(false);
+    expect(matches('Work/Private/Plan.md')).toBe(false);
+    expect(matches('Work/image.png')).toBe(false);
+  });
+  it('supports glob zero-depth, recursive depth, literal dots and exact note paths', () => {
+    const matches = selection(['Work/**/*.md', 'Inbox.md'], ['**/secret?.md']);
+    for (const path of ['Work/Plan.md', 'Work/a/b/Plan.md', 'Inbox.md']) expect(matches(path)).toBe(true);
+    for (const path of ['Work/secrets.md', 'Else/Inbox.md', '.obsidian/private.md']) expect(matches(path)).toBe(false);
+  });
+  it('removes all note properties and rejects unclosed YAML', () => {
+    expect(stripFrontmatter('---\nsecret: hidden\n---\nHello')).toBe('Hello');
+    expect(() => stripFrontmatter('---\nsecret: hidden')).toThrow('Unclosed');
+    expect(stripFrontmatter('---\n---\nHello')).toBe('Hello');
+    expect(stripFrontmatter('---\r\n---\r\nHello')).toBe('Hello');
+  });
+  it('validates persisted mappings rather than trusting arbitrary frontmatter', () => {
+    expect(parseBinding(false)).toBeUndefined();
+    expect(() => parseBinding({ id: 'oops', account: 'x' })).toThrow();
+  });
+});
+
+describe('formatted content', () => {
+  it('uses only supported formatting and keeps table links', async () => {
+    const rendered = await renderNote('## Heading\n\n**Bold** *italic* ~~strike~~ `code`\n\n- [x] Done\n\n```ts\n<x>\n```\n\n| Name | Link |\n|---|---|\n| Alice | [Page](https://example.com) |',
+      { sourceUrl: '', resolve: async () => ({}) });
+    expect(rendered.html).toContain('<h1>Heading</h1>');
+    expect(rendered.html).toContain('<strike>strike</strike>');
+    expect(rendered.html).toContain('☑ Done');
+    expect(rendered.html).toContain('<pre>&lt;x&gt;');
+    expect(rendered.html).toContain('<strong>Name:</strong> Alice');
+    expect(rendered.html).toContain('href="https://example.com"');
+    expect(rendered.html).not.toMatch(/<(?:table|p|h2|code|input|img)\b/);
+  });
+  it('escapes HTML, unsafe links and hostile attachment labels', async () => {
+    const result = await renderNote('<script>alert(1)</script>\n\n[[attack|<img onerror=x>]]\n\n![[pic.png|" onload="bad]]', {
+      sourceUrl: 'javascript:alert(1)',
+      resolve: async target => target === 'attack' ? { url: 'javascript:alert(1)' } : { sgid: 'safe"bad' },
+    });
+    expect(result.html).not.toMatch(/<script|<img|href="javascript/);
+    expect(result.html).toContain('sgid="safe&quot;bad"');
+    expect(result.html).toContain('&lt;img onerror=x&gt;');
+  });
+  it('resolves wikilinks and attachments without transcluding arbitrary notes', async () => {
+    const resolver = vi.fn(async (target: string, embed: boolean) => ({
+      url: 'https://example.com/' + target, sgid: embed && target.endsWith('.png') ? 'sgid' : undefined,
+    }));
+    const result = await renderNote('[[Plan|Next]] and ![[image.png]] and `[[literal]]`', { sourceUrl: '', resolve: resolver });
+    expect(result.html).toContain('>Next</a>');
+    expect(result.html).toContain('<bc-attachment sgid="sgid"');
+    expect(resolver).toHaveBeenCalledTimes(2);
+    expect(result.html).toContain('[[literal]]');
+  });
+  it('excludes comments and frontmatter from publication', async () => {
+    const result = await renderNote('---\nsecret: value\n---\nVisible %%private%% text', { sourceUrl: '', resolve: async () => ({}) });
+    expect(result.html).not.toMatch(/secret|private/);
+    expect(result.html).toContain('Visible');
+  });
+  it('omits multiline comments while preserving literal comments in code', async () => {
+    const result = await renderNote('Visible\n\n%%\nprivate\n\nsecret\n%%\n\n`%%literal%%`\n\n```\n%%code%%\n```', { sourceUrl: '', resolve: async () => ({}) });
+    expect(result.html).not.toMatch(/private|secret/);
+    expect(result.html).toContain('%%literal%%');
+    expect(result.html).toContain('%%code%%');
+  });
+  it('retains a recovery marker in an HTTPS link if custom schemes are stripped', async () => {
+    const result = await renderNote('Hello', { sourceUrl: 'obsidian://open?file=Hello',
+      recoveryUrl: 'https://3.basecamp.com/1/buckets/2/vaults/3?basecamp-sync-id=unique-marker', resolve: async () => ({}) });
+    expect(result.html.replace(/href="obsidian:[^"]*"/g, '')).toContain('basecamp-sync-id=unique-marker');
+  });
+  it('keeps the content fingerprint stable when adding the recovery marker', async () => {
+    const a = await renderNote('Hello', { sourceUrl: 'obsidian://open?file=x', resolve: async () => ({}) });
+    const b = await renderNote('Hello', { sourceUrl: 'obsidian://open?file=x', recoveryUrl: 'https://example.com/?id=y', resolve: async () => ({}) });
+    expect(a.hash).toBe(b.hash);
+  });
+  it('renders a callout label without raw Obsidian markers', async () => {
+    const result = await renderNote('> [!NOTE]\n> Useful context.', { sourceUrl: '', resolve: async () => ({}) });
+    expect(result.html).toContain('<strong>Note</strong>');
+    expect(result.html).not.toContain('[!NOTE]');
+  });
+});
+
+describe('sync engine', () => {
+  it('creates once, checkpoints before posting, and does no remote work on unchanged content', async () => {
+    const { engine, api, save, note } = setup();
+    expect((await engine.run([note.path], []))[0]?.status).toBe('created');
+    expect(save.mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(api.createDocument).mock.invocationCallOrder[0]!);
+    expect((await engine.run([note.path], [note]))[0]?.status).toBe('unchanged');
+    expect(api.createDocument).toHaveBeenCalledTimes(1);
+    expect(api.getDocument).not.toHaveBeenCalled();
+    expect(api.updateDocument).not.toHaveBeenCalled();
+  });
+  it('updates the same document after edits or renames', async () => {
+    const { engine, api, note } = setup();
+    await engine.run([note.path], []);
+    note.path = 'Work/Renamed.md'; note.title = 'Renamed'; note.markdown = 'New content';
+    expect((await engine.run([note.path], [note]))[0]?.status).toBe('updated');
+    expect(api.updateDocument).toHaveBeenCalledWith(10, 'Renamed', expect.stringContaining('New content'));
+    expect(api.createDocument).toHaveBeenCalledTimes(1);
+  });
+  it('protects remote edits and never uploads content on a conflict', async () => {
+    const { engine, api, note, documents, host } = setup();
+    await engine.run([note.path], []);
+    documents.set(10, { ...documents.get(10)!, content: 'A colleague edited this' });
+    note.markdown = 'My version';
+    host.render = vi.fn(host.render);
+    const result = await engine.run([note.path], [note]);
+    expect(result[0]?.detail).toContain('changed since');
+    expect(api.updateDocument).not.toHaveBeenCalled();
+    expect(host.render).not.toHaveBeenCalledWith(expect.anything(), true);
+  });
+  it('does not recreate a missing remote document', async () => {
+    const { engine, note, documents, api } = setup();
+    await engine.run([note.path], []); documents.clear(); note.markdown = 'Edit';
+    expect((await engine.run([note.path], [note]))[0]?.status).toBe('error');
+    expect(api.createDocument).toHaveBeenCalledTimes(1);
+  });
+  it('rejects copied identities, including copies outside selected folders', async () => {
+    const { engine, note, api } = setup(); await engine.run([note.path], []);
+    const copied = { ...note, path: 'Private/Copy.md' };
+    expect((await engine.run([note.path], [note, copied]))[0]?.detail).toContain('Two notes');
+    expect(api.updateDocument).not.toHaveBeenCalled();
+  });
+  it('rejects destination changes and archived documents', async () => {
+    const { engine, note, documents, host, api } = setup(); await engine.run([note.path], []);
+    const changed = new SyncEngine(host, api, { ...settings, accountId: '99' });
+    expect((await changed.run([note.path], [note]))[0]?.detail).toContain('different destination');
+    documents.set(10, { ...documents.get(10)!, status: 'archived' }); note.markdown = 'Edit';
+    expect((await engine.run([note.path], [note]))[0]?.detail).toContain('archived');
+  });
+  it('recovers a create accepted by Basecamp before the response was lost', async () => {
+    const { engine, api, note, documents } = setup();
+    const create = api.createDocument;
+    vi.mocked(api.createDocument).mockImplementationOnce(async (...args) => {
+      const document: RemoteDocument = { id: 10, title: args[1], content: args[2], bucket: { id: 2 }, status: 'active' };
+      documents.set(10, document);
+      vi.mocked(api.listDocuments).mockResolvedValue([document]);
+      throw new Error('Disconnected');
+    });
+    expect((await engine.run([note.path], []))[0]?.status).toBe('error');
+    expect(note.binding?.pending).toBe(true);
+    expect((await engine.run([note.path], [note]))[0]?.status).toBe('updated');
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(note.binding?.document).toBe(10);
+  });
+  it('does not retry an ambiguous create when no matching document is found', async () => {
+    const { engine, api, note } = setup();
+    vi.mocked(api.createDocument).mockRejectedValue(new Error('Offline'));
+    await engine.run([note.path], []);
+    expect((await engine.run([note.path], [note]))[0]?.detail).toContain('unknown outcome');
+    expect(api.createDocument).toHaveBeenCalledTimes(1);
+  });
+  it('allows a later retry after a definitive rate-limit rejection', async () => {
+    const { engine, api, note } = setup();
+    vi.mocked(api.createDocument).mockRejectedValueOnce(Object.assign(new Error('Rate limited'), { httpStatus: 429 }));
+    await engine.run([note.path], []);
+    expect(note.binding?.pending).toBe(false);
+    expect((await engine.run([note.path], [note]))[0]?.status).toBe('created');
+  });
+  it('does not mark a failed attachment preparation as an ambiguous document create', async () => {
+    const { engine, api, note, host } = setup();
+    const original = host.render;
+    host.render = vi.fn(async (note: Note, upload?: boolean) => {
+      if (upload) throw new Error('Attachment failed');
+      return original(note);
+    });
+    await engine.run([note.path], []);
+    expect(note.binding?.pending).toBe(false);
+    expect(api.createDocument).not.toHaveBeenCalled();
+  });
+  it('skips excluded notes without remote requests', async () => {
+    const { engine, note, api } = setup(); note.disabled = true;
+    expect((await engine.run([note.path], []))[0]?.status).toBe('skipped');
+    expect(api.createDocument).not.toHaveBeenCalled();
+  });
+  it('keeps cancellation across link-repair passes', async () => {
+    const { engine, note, api } = setup(); engine.cancel();
+    expect(await engine.run([note.path], [])).toEqual([]);
+    expect(api.createDocument).not.toHaveBeenCalled();
+  });
+  it('fingerprints both the remote title and canonical HTML', async () => {
+    expect(await remoteHash({ id: 1, title: 'A', content: 'B' })).not.toBe(await remoteHash({ id: 1, title: 'B', content: 'A' }));
+  });
+});

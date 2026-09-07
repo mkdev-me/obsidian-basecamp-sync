@@ -1,0 +1,42 @@
+{
+  "name": "basecamp-sync",
+  "version": "0.1.0",
+  "description": "Sync selected Obsidian notes to Basecamp documents.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "author": "mkdev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mkdev-me/obsidian-basecamp-sync.git"
+  },
+  "homepage": "https://github.com/mkdev-me/obsidian-basecamp-sync#readme",
+  "bugs": "https://github.com/mkdev-me/obsidian-basecamp-sync/issues",
+  "scripts": {
+    "dev": "node esbuild.config.mjs --watch",
+    "build": "tsc --noEmit && node esbuild.config.mjs",
+    "test": "vitest run",
+    "check": "npm run lint && npm test && npm run build",
+    "lint": "eslint .",
+    "package": "npm run check && node scripts/package.mjs"
+  },
+  "dependencies": {
+    "@37signals/basecamp": "0.16.0",
+    "markdown-it": "14.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@types/markdown-it": "^14.1.2",
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.25.0",
+    "eslint": "^9.39.0",
+    "eslint-plugin-obsidianmd": "0.4.2",
+    "obsidian": "1.13.1",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

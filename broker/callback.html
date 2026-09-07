@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Return to Obsidian</title>
+</head>
+<body>
+  <h1>Finish connecting Basecamp</h1>
+  <p><a id="return">Return to Obsidian</a></p>
+  <p>If the link does not open Obsidian, paste this page's full URL into “Complete login manually” in Basecamp Sync.</p>
+  <script>
+    const input = new URLSearchParams(location.search);
+    const output = new URLSearchParams();
+    for (const key of ['code', 'state', 'error']) {
+      const value = input.get(key);
+      if (value) output.set(key, value);
+    }
+    if (output.has('state')) document.getElementById('return').href = 'obsidian://basecamp-sync?' + output;
+    else document.getElementById('return').textContent = 'No login callback found. Start connecting from Obsidian.';
+  </script>
+</body>
+</html>
