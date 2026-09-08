@@ -31,7 +31,7 @@ The plugin is designed for desktop, iOS and Android, using Obsidian APIs and bro
 5. Select **Latest version**, enable **Enable after installing the plugin**, then add the plugin. Select a specific version instead if you want to pin it.
 6. Open **Settings → Basecamp Sync** and connect to Basecamp.
 
-BRAT installs the files and can check for future releases. The same process works on desktop and mobile, without building the plugin or copying files manually. Version `0.1.3` is a development pre-release; BRAT includes pre-releases when tracking the latest version.
+BRAT installs the files and can check for future releases. The same process works on desktop and mobile, without building the plugin or copying files manually. Version `0.1.4` is a development pre-release; BRAT includes pre-releases when tracking the latest version.
 
 **Private repository access:** your GitHub account must have access to this repository. Create a [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) with **Resource owner: mkdev-me**, **Only selected repositories: obsidian-basecamp-sync**, and **Contents: Read-only**. Complete organization approval if GitHub requires it. In BRAT's add-plugin dialog, use **GitHub token** to add/select the token through Obsidian's Secret storage. Set it up on each device; secrets are device-local. This token is for downloading plugin releases; Basecamp login is configured separately. Once the repository is public, a GitHub token is optional. See [BRAT's private repository guide](https://github.com/TfTHacker/obsidian42-brat/blob/main/BRAT-DEVELOPER-GUIDE.md#access-to-private-repositories).
 
