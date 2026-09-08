@@ -6,7 +6,11 @@ Automated tests run without credentials and do not write to a real Basecamp acco
 
 Desktop smoke check on 2026-09-07: the built plugin loaded successfully in Obsidian 1.13.7 on macOS using an isolated two-note test vault. Its native settings, registered commands, selected-note preview and formatted-content preview were exercised in the real app. Properties and private scratch comments were absent from the rendered preview. This check did not connect to or write to Basecamp.
 
-The mkdev OAuth app and hosted login service were provisioned on 2026-09-07. HTTPS `/health` returns 200, login start points to the registered app and exact callback, and malformed requests are rejected. Terraform reports no changes after deployment. These checks do not authorize a Basecamp account or prove token renewal. Physical iOS/Android behavior, real Basecamp HTML normalization and end-to-end live publication must be checked before a public stable release. Do not claim those checks passed merely because the bundle compiles or mocks pass.
+Live desktop checks on 2026-09-08 in Obsidian 1.13.7 on macOS verified shared-integration login, document creation and source-folder mapping into existing Basecamp folders. Version 0.1.5 then updated the same document to remove its old footer, preserving its document ID, parent folder and authored text; the run reported one update and no errors.
+
+On 2026-09-08, the maintainer reported that syncing works on physical iOS and confirmed authentication was needed only for the first connection on that device. This is expected because credentials are device-local. Exact iOS and Obsidian versions and individual test scenarios were not recorded, so this confirms basic iOS use rather than every acceptance case below.
+
+The mkdev OAuth app and hosted login service were provisioned on 2026-09-07. HTTPS `/health` returned 200, login start pointed to the registered app and exact callback, and malformed requests were rejected. Terraform reported no changes after deployment. Live expired-token renewal, Android, the full formatting and attachment matrix, recovery scenarios and cross-device continuation of the same document remain to be checked. Do not count automated coverage or basic device checks as evidence that all of those scenarios passed.
 
 ## Private BRAT releases
 
