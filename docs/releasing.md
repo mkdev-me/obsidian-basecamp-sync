@@ -24,7 +24,7 @@ A draft visible to a maintainer is insufficient for distribution to testers. BRA
 ## Before the first community submission
 
 - [x] Register and deploy the shared integration using [authentication.md](authentication.md).
-- [ ] Verify the service, set its real URL in `DEFAULT_BROKER_URL`, and rebuild. Otherwise clearly release as personal-integration-only and update the default login method accordingly.
+- [x] Set the deployed service URL in `DEFAULT_BROKER_URL` and use it for empty saved URLs.
 - [ ] Complete the real-client acceptance tests below, recording app/OS versions and date.
 - [ ] Review README, privacy policy, license, screenshots and the callback/service deployment instructions.
 - [ ] Confirm the chosen `basecamp-sync` plugin ID is available in the current community directory.

@@ -1,6 +1,6 @@
 import { App, Notice, PluginSettingTab, SecretComponent, Setting } from 'obsidian';
 import type BasecampSyncPlugin from './main';
-import type { Settings } from './model';
+import { DEFAULT_BROKER_URL, type Settings } from './model';
 
 export class BasecampSettingsTab extends PluginSettingTab {
   constructor(app: App, private readonly plugin: BasecampSyncPlugin) { super(app, plugin); }
@@ -18,9 +18,8 @@ export class BasecampSettingsTab extends PluginSettingTab {
         settings.authMode = value as Settings['authMode']; await save(); this.display();
       }));
     if (settings.authMode === 'shared') {
-      this.text('Login service URL', 'HTTPS address of the mkdev service, or your own deployment of the included service.',
-        'brokerUrl', 'https://your-login-service.example');
-      if (!settings.brokerUrl) el.createEl('p', { text: 'The shared service must be deployed and configured before this login method is available. See the authentication guide.' });
+      this.text('Login service URL', 'Uses mkdev’s hosted login service by default. Change this only for your own deployment.',
+        'brokerUrl', DEFAULT_BROKER_URL);
     } else if (settings.authMode === 'own') {
       this.text('Client ID', 'From your Basecamp integration registration.', 'clientId');
       new Setting(el).setName('Client secret').setDesc('Choose your own integration secret. Never distribute it with the plugin.')

@@ -1,7 +1,7 @@
 import { getFrontMatterInfo, Modal, Notice, parseYaml, Plugin, sanitizeHTMLToDom, Setting, TFile } from 'obsidian';
 import { Auth } from './auth';
 import { gateway, sdkClient, type Gateway } from './basecamp';
-import { DEFAULT_SETTINGS, type Binding, type Note, type Settings, documentUrl, noteUri,
+import { DEFAULT_BROKER_URL, DEFAULT_SETTINGS, type Binding, type Note, type Settings, documentUrl, noteUri,
   parseBinding, positiveId, sha256 } from './model';
 import { renderNote, type Rendered } from './render';
 import { selection } from './selection';
@@ -38,6 +38,7 @@ export default class BasecampSyncPlugin extends Plugin {
   async onload(): Promise<void> {
     const saved = await this.loadData() as Partial<Data> | null;
     this.settings = { ...DEFAULT_SETTINGS, ...saved?.settings,
+      brokerUrl: saved?.settings?.brokerUrl?.trim() || DEFAULT_BROKER_URL,
       autoSync: this.app.loadLocalStorage('basecamp-sync-auto') === true };
     this.data = { settings: this.settings, attachments: saved?.attachments || {} };
     this.auth = new Auth(this.app, () => this.settings);
@@ -87,6 +88,7 @@ export default class BasecampSyncPlugin extends Plugin {
   }
 
   async saveSettings(): Promise<void> {
+    this.settings.brokerUrl = this.settings.brokerUrl.trim() || DEFAULT_BROKER_URL;
     if (!this.settings.autoSync) {
       if (this.timer !== undefined) window.clearTimeout(this.timer);
       this.timer = undefined;
