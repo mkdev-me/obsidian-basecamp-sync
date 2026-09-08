@@ -36,7 +36,9 @@ The plugin uses Obsidian APIs and browser APIs only. Desktop and iOS have been e
 
 ### Community directory
 
-Community-directory publication is being prepared. Until the listing is approved, install with BRAT or the release files below. This section will be updated when the plugin is available in **Settings → Community plugins → Browse**.
+The [Basecamp Sync Community listing](https://community.obsidian.md/plugins/basecamp-sync) is public. In Obsidian, open **Settings → Community plugins → Browse**, search for **Basecamp Sync**, then choose **Install** and **Enable**.
+
+The initial automated review completed on 2026-09-08 with no blocking errors. New entries can take [up to 24 hours to appear in the app](https://obsidian.md/blog/future-of-plugins/). If it is not listed yet, use BRAT or the release files below.
 
 ### BRAT (desktop and mobile, available now)
 
