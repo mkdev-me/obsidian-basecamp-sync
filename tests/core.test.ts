@@ -6,8 +6,7 @@ import { renderNote } from '../src/render';
 import { remoteHash, SyncEngine } from '../src/sync';
 
 const settings = { ...DEFAULT_SETTINGS, accountId: '1', projectId: '2', vaultId: '3', includes: ['Work'] };
-const render = (note: Note) => renderNote(note.markdown, { sourceUrl: `obsidian://open?file=${note.path}`,
-  recoveryUrl: note.binding ? `https://3.basecamp.com/1/buckets/2/vaults/3?basecamp-sync-id=${note.binding.id}` : undefined,
+const render = (note: Note) => renderNote(note.markdown, {
   resolve: async () => ({ url: 'https://example.com/note' }) });
 
 function setup() {
@@ -16,7 +15,6 @@ function setup() {
   const api: Gateway = {
     validateDestination: vi.fn(async () => {}),
     getDocument: vi.fn(async id => { if (!documents.has(id)) throw new Error('Not found'); return documents.get(id)!; }),
-    listDocuments: vi.fn(async () => [...documents.values()]),
     createDocument: vi.fn(async (_vault, title, content) => {
       const document = { id: 10, title, content, bucket: { id: 2 }, status: 'active' };
       documents.set(10, document); return document;
@@ -31,6 +29,20 @@ function setup() {
   const save = vi.fn(async (_path: string, binding: Binding) => { note.binding = { ...binding }; });
   const host = { read: async () => ({ ...note }), saveBinding: save, render: async (note: Note) => render(note) };
   return { note, api, save, documents, engine: new SyncEngine(host, api, settings), host };
+}
+
+async function legacySetup() {
+  const state = setup();
+  state.note.markdown = 'Hello';
+  const document = { id: 10, title: 'Plan', bucket: { id: 2 }, status: 'active',
+    content: '<div dir="auto">Hello</div>\n<div dir="auto"><a>Open in Obsidian</a></div>' +
+      '<div dir="auto"><a href="https://3.basecamp.com/1/buckets/2/vaults/4?basecamp-sync-id=legacy-note-identity">Basecamp folder</a></div>' };
+  state.documents.set(10, document);
+  state.note.binding = { id: 'legacy-note-identity', account: '1', project: 2, root: 3, vault: 4, document: 10,
+    // Fingerprint produced by 0.1.4 for this note in the vault "Test".
+    sourceHash: 'c9bf04d2ecb385d3443e737fc56d7800d24c91dbe3836a0cc42ed52c41181472',
+    remoteHash: await remoteHash(document), pending: false };
+  return state;
 }
 
 describe('selection and metadata', () => {
@@ -76,7 +88,7 @@ describe('selection and metadata', () => {
 describe('formatted content', () => {
   it('uses only supported formatting and keeps table links', async () => {
     const rendered = await renderNote('## Heading\n\n**Bold** *italic* ~~strike~~ `code`\n\n- [x] Done\n\n```ts\n<x>\n```\n\n| Name | Link |\n|---|---|\n| Alice | [Page](https://example.com) |',
-      { sourceUrl: '', resolve: async () => ({}) });
+      { resolve: async () => ({}) });
     expect(rendered.html).toContain('<h1>Heading</h1>');
     expect(rendered.html).toContain('<strike>strike</strike>');
     expect(rendered.html).toContain('☑ Done');
@@ -87,7 +99,6 @@ describe('formatted content', () => {
   });
   it('escapes HTML, unsafe links and hostile attachment labels', async () => {
     const result = await renderNote('<script>alert(1)</script>\n\n[[attack|<img onerror=x>]]\n\n![[pic.png|" onload="bad]]', {
-      sourceUrl: 'javascript:alert(1)',
       resolve: async target => target === 'attack' ? { url: 'javascript:alert(1)' } : { sgid: 'safe"bad' },
     });
     expect(result.html).not.toMatch(/<script|<img|href="javascript/);
@@ -98,41 +109,61 @@ describe('formatted content', () => {
     const resolver = vi.fn(async (target: string, embed: boolean) => ({
       url: 'https://example.com/' + target, sgid: embed && target.endsWith('.png') ? 'sgid' : undefined,
     }));
-    const result = await renderNote('[[Plan|Next]] and ![[image.png]] and `[[literal]]`', { sourceUrl: '', resolve: resolver });
+    const result = await renderNote('[[Plan|Next]] and ![[image.png]] and `[[literal]]`', { resolve: resolver });
     expect(result.html).toContain('>Next</a>');
     expect(result.html).toContain('<bc-attachment sgid="sgid"');
     expect(resolver).toHaveBeenCalledTimes(2);
     expect(result.html).toContain('[[literal]]');
   });
   it('excludes comments and frontmatter from publication', async () => {
-    const result = await renderNote('---\nsecret: value\n---\nVisible %%private%% text', { sourceUrl: '', resolve: async () => ({}) });
+    const result = await renderNote('---\nsecret: value\n---\nVisible %%private%% text', { resolve: async () => ({}) });
     expect(result.html).not.toMatch(/secret|private/);
     expect(result.html).toContain('Visible');
   });
   it('omits multiline comments while preserving literal comments in code', async () => {
-    const result = await renderNote('Visible\n\n%%\nprivate\n\nsecret\n%%\n\n`%%literal%%`\n\n```\n%%code%%\n```', { sourceUrl: '', resolve: async () => ({}) });
+    const result = await renderNote('Visible\n\n%%\nprivate\n\nsecret\n%%\n\n`%%literal%%`\n\n```\n%%code%%\n```', { resolve: async () => ({}) });
     expect(result.html).not.toMatch(/private|secret/);
     expect(result.html).toContain('%%literal%%');
     expect(result.html).toContain('%%code%%');
   });
-  it('retains a recovery marker in an HTTPS link if custom schemes are stripped', async () => {
-    const result = await renderNote('Hello', { sourceUrl: 'obsidian://open?file=Hello',
-      recoveryUrl: 'https://3.basecamp.com/1/buckets/2/vaults/3?basecamp-sync-id=unique-marker', resolve: async () => ({}) });
-    expect(result.html.replace(/href="obsidian:[^"]*"/g, '')).toContain('basecamp-sync-id=unique-marker');
+  it('publishes only note content without a footer or hidden sync marker', async () => {
+    const result = await renderNote('Hello', { resolve: async () => ({}) });
+    expect(result.html).toBe('<div>Hello</div>\n');
   });
-  it('keeps the content fingerprint stable when adding the recovery marker', async () => {
-    const a = await renderNote('Hello', { sourceUrl: 'obsidian://open?file=x', resolve: async () => ({}) });
-    const b = await renderNote('Hello', { sourceUrl: 'obsidian://open?file=x', recoveryUrl: 'https://example.com/?id=y', resolve: async () => ({}) });
-    expect(a.hash).toBe(b.hash);
+  it('preserves source links intentionally written in the note', async () => {
+    const result = await renderNote('[[Plan|Open in Obsidian]]', {
+      resolve: async () => ({ url: 'obsidian://open?vault=Test&file=Plan.md' }),
+    });
+    expect(result.html).toBe('<div><a href="obsidian://open?vault=Test&amp;file=Plan.md">Open in Obsidian</a></div>\n');
   });
   it('renders a callout label without raw Obsidian markers', async () => {
-    const result = await renderNote('> [!NOTE]\n> Useful context.', { sourceUrl: '', resolve: async () => ({}) });
+    const result = await renderNote('> [!NOTE]\n> Useful context.', { resolve: async () => ({}) });
     expect(result.html).toContain('<strong>Note</strong>');
     expect(result.html).not.toContain('[!NOTE]');
   });
 });
 
 describe('sync engine', () => {
+  it('removes the old footer from an unchanged note on its next sync, then returns to no-op updates', async () => {
+    const { engine, api, note, documents } = await legacySetup();
+    expect((await engine.run([note.path], [note]))[0]?.status).toBe('updated');
+    expect(api.createDocument).not.toHaveBeenCalled();
+    expect(api.updateDocument).toHaveBeenCalledWith(10, 'Plan', '<div>Hello</div>\n');
+    expect(documents.get(10)?.content).toBe('<div>Hello</div>\n');
+    expect(note.markdown).toBe('Hello');
+    expect(note.binding?.document).toBe(10);
+    vi.mocked(api.getDocument).mockClear();
+    expect((await engine.run([note.path], [note]))[0]?.status).toBe('unchanged');
+    expect(api.getDocument).not.toHaveBeenCalled();
+    expect(api.updateDocument).toHaveBeenCalledTimes(1);
+  });
+  it('protects remote edits during the old-footer cleanup', async () => {
+    const { engine, api, note, documents } = await legacySetup();
+    documents.set(10, { ...documents.get(10)!, content: 'Edited in Basecamp' });
+    expect((await engine.run([note.path], [note]))[0]?.detail).toContain('changed since');
+    expect(api.updateDocument).not.toHaveBeenCalled();
+    expect(api.createDocument).not.toHaveBeenCalled();
+  });
   it('recreates only the folders below the source folder', async () => {
     const { api, note, host } = setup();
     note.path = 'Projects/Writing/Basecamp/Standalone Content/External Highlights/KARS/Note.md';
@@ -233,22 +264,27 @@ describe('sync engine', () => {
     documents.set(10, { ...documents.get(10)!, status: 'archived' }); note.markdown = 'Edit';
     expect((await engine.run([note.path], [note]))[0]?.detail).toContain('archived');
   });
-  it('recovers a create accepted by Basecamp before the response was lost', async () => {
+  it('stops after a lost create response and resumes only after the user links the existing document', async () => {
     const { engine, api, note, documents } = setup();
     const create = api.createDocument;
     vi.mocked(api.createDocument).mockImplementationOnce(async (...args) => {
       const document: RemoteDocument = { id: 10, title: args[1], content: args[2], bucket: { id: 2 }, status: 'active' };
       documents.set(10, document);
-      vi.mocked(api.listDocuments).mockResolvedValue([document]);
       throw new Error('Disconnected');
     });
     expect((await engine.run([note.path], []))[0]?.status).toBe('error');
     expect(note.binding?.pending).toBe(true);
+    expect(documents.get(10)?.content).not.toMatch(/Open in Obsidian|Basecamp folder|basecamp-sync-id/);
+    expect((await engine.run([note.path], [note]))[0]?.detail).toContain('unknown outcome');
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(api.updateDocument).not.toHaveBeenCalled();
+    expect(api.getDocument).not.toHaveBeenCalled();
+    note.binding = { ...note.binding!, document: 10, remoteHash: await remoteHash(documents.get(10)!), pending: false };
     expect((await engine.run([note.path], [note]))[0]?.status).toBe('updated');
     expect(create).toHaveBeenCalledTimes(1);
     expect(note.binding?.document).toBe(10);
   });
-  it('does not retry an ambiguous create when no matching document is found', async () => {
+  it('does not retry an ambiguous create without a confirmed document ID', async () => {
     const { engine, api, note } = setup();
     vi.mocked(api.createDocument).mockRejectedValue(new Error('Offline'));
     await engine.run([note.path], []);

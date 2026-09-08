@@ -11,8 +11,6 @@ export interface LinkTarget {
 }
 export interface RenderOptions {
   resolve: (target: string, embed: boolean) => Promise<LinkTarget>;
-  sourceUrl: string;
-  recoveryUrl?: string;
 }
 export interface Rendered {
   html: string;
@@ -129,11 +127,8 @@ export async function renderNote(markdown: string, options: RenderOptions): Prom
       : `<div>${headers.join(' · ')}</div>\n`;
     tokens.splice(i + 1, end - i);
   }
-  let html = md.renderer.render(tokens, md.options, {});
-  const hash = await sha256(`${html}\n${options.sourceUrl}\n${dependencies.join('\n')}`);
-  if (safeUrl(options.sourceUrl)) html += `<div><a href="${escape(options.sourceUrl)}">Open in Obsidian</a></div>`;
-  // A normal HTTPS folder link keeps the recovery marker even if Basecamp strips custom URI schemes.
-  if (options.recoveryUrl && /^https:\/\//.test(options.recoveryUrl) && safeUrl(options.recoveryUrl))
-    html += `<div><a href="${escape(options.recoveryUrl)}">Basecamp folder</a></div>`;
+  const html = md.renderer.render(tokens, md.options, {});
+  // Changing the fingerprint also refreshes unchanged notes published with the old footer.
+  const hash = await sha256(JSON.stringify([html, dependencies]));
   return { html, hash, warnings: [...warnings] };
 }

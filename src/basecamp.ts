@@ -13,7 +13,6 @@ export interface RemoteFolder { id: number; title: string }
 export interface Gateway {
   validateDestination(project: number, vault: number): Promise<void>;
   getDocument(id: number): Promise<RemoteDocument>;
-  listDocuments(vault: number): Promise<RemoteDocument[]>;
   createDocument(vault: number, title: string, html: string): Promise<RemoteDocument>;
   updateDocument(id: number, title: string, html: string): Promise<RemoteDocument>;
   listFolders(vault: number): Promise<RemoteFolder[]>;
@@ -41,7 +40,6 @@ export function gateway(account: string, accessToken: () => Promise<string>): Ga
         throw new Error('Choose an active project and a destination inside that project.');
     },
     getDocument: id => read.documents.get(id),
-    listDocuments: async vault => Array.from(await read.documents.list(vault)),
     createDocument: (vault, title, content) => write.documents.create(vault, {
       title, content, status: 'active', subscriptions: [], visibleToClients: false,
     }),

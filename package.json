@@ -1,6 +1,6 @@
 {
   "name": "basecamp-sync",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Sync selected Obsidian notes to Basecamp documents.",
   "private": true,
   "type": "module",

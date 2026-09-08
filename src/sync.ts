@@ -108,19 +108,9 @@ export class SyncEngine {
       binding.project !== positiveId(this.settings.projectId) || binding.root !== positiveId(this.settings.vaultId)))
       throw new Error('This note is linked to a different destination. Restore that destination or explicitly unlink the note.');
 
-    // An interrupted create has a durable marker. Only adopt an exact remote match; never create twice.
-    if (binding?.pending && !binding.document) {
-      const matches = (await this.api.listDocuments(binding.vault))
-        .filter(document => document.content?.includes(`basecamp-sync-id=${binding!.id}`));
-      if (matches.length !== 1)
-        throw new Error('An earlier create has an unknown outcome. Inspect Basecamp and use “Link current note to existing document” before retrying.');
-      const remote = matches[0]!;
-      this.validateDocument(remote);
-      binding = { ...binding, document: remote.id, url: documentUrl(binding.account, binding.project, remote.id),
-        remoteHash: await remoteHash(remote), pending: false };
-      await this.host.saveBinding(note.path, binding);
-      note.binding = binding;
-    }
+    // Without a confirmed document ID, a retry could create a duplicate.
+    if (binding?.pending && !binding.document)
+      throw new Error('An earlier create has an unknown outcome. Inspect Basecamp and use “Link current note to existing document” before retrying.');
 
     const draft = await this.host.render(note, false);
     const sourceHash = await sha256(JSON.stringify([note.title, note.path, draft.hash]));
