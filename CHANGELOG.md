@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.6
+
+- Prepare the first public release with account, network and hosted-service disclosures.
+- Add an example selection screenshot and simplify public installation instructions.
+- Document desktop and iOS use and the initial sign-in required on each device.
+- Keep the sync behavior from 0.1.5 unchanged.
+
 ## 0.1.5
 
 - Remove the automatic Open in Obsidian and Basecamp folder footer links entirely, without adding hidden sync markers.
