@@ -37,8 +37,7 @@ export interface Settings {
   debounceSeconds: number;
 }
 
-// Set only after mkdev has deployed and verified its shared OAuth service.
-export const DEFAULT_BROKER_URL = '';
+export const DEFAULT_BROKER_URL = 'https://basecamp-obsidian-sync.fodoj.com';
 export const DEFAULT_SETTINGS: Settings = {
   authMode: 'shared', brokerUrl: DEFAULT_BROKER_URL, clientId: '',
   clientSecretName: '', tokenSecretName: '',

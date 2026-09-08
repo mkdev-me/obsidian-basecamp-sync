@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2
+
+- Fill in the shared mkdev login service URL automatically, including empty URLs saved by earlier versions.
+- Preserve custom service URLs and restore the mkdev default when the field is cleared.
+- Remove the outdated shared-service deployment warning and update setup instructions.
+
 ## 0.1.1
 
 - Coalesce repeated login callbacks so each authorization code is exchanged once per pending login.

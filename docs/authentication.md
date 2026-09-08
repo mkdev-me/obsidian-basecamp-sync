@@ -6,7 +6,7 @@ The official [SDK authentication guide](https://github.com/basecamp/basecamp-sdk
 
 Basecamp's API and SDK documentation currently disagree about personal access tokens. The plugin accepts an existing bearer token if you already have one, but does not claim a universally available personal-token creation workflow.
 
-Ordinary users do **not** need their own OAuth app. The mkdev integration was registered and deployed on 2026-09-07 at `https://basecamp-obsidian-sync.fodoj.com`. Its HTTPS health check and login-start routing pass. During beta testing, enter that URL manually; the built-in default remains blank until real desktop and iOS login and renewal have been verified.
+Ordinary users do **not** need their own OAuth app. The mkdev integration was registered and deployed on 2026-09-07 at `https://basecamp-obsidian-sync.fodoj.com`. Its HTTPS health check and login-start routing pass. The plugin fills in this URL automatically, including when upgrading an installation with an empty saved URL. Custom service URLs are preserved. Real desktop and iOS login and renewal acceptance checks remain pending.
 
 ## Maintainer: prepare the shared mkdev integration
 
@@ -15,7 +15,7 @@ The shared integration uses one stateless Cloudflare Worker in [fodoj-com](https
 1. The shared [Basecamp Sync by mkdev app](https://launchpad.37signals.com/integrations/28850) is registered with callback `https://basecamp-obsidian-sync.fodoj.com/callback`. Register a separate app at [Launchpad integrations](https://launchpad.37signals.com/integrations) for your own deployment.
 2. Deploy the Worker using its README and set `BASECAMP_CLIENT_ID` and `BASECAMP_CLIENT_SECRET` as Cloudflare secrets. No database, migrations or scheduled jobs are needed. Never embed the app secret in the plugin.
 3. Check `/health`, then perform the desktop and physical iOS login, renewal and reconnection checks in [releasing.md](releasing.md). Use a test account to verify Basecamp's authorization-code expiry and reuse behavior; repeated exchange may invalidate previously issued tokens.
-4. Only after those checks, publish a plugin release with `DEFAULT_BROKER_URL` set to `https://basecamp-obsidian-sync.fodoj.com`. Until then the default remains blank.
+4. `DEFAULT_BROKER_URL` points to `https://basecamp-obsidian-sync.fodoj.com`. Complete the real-client checks before a public stable release.
 
 For your own hosted integration, deploy the same Worker with your app credentials and HTTPS origin, then enter that address in the plugin.
 
@@ -32,7 +32,7 @@ The challenge protects the service-to-Obsidian handoff; Launchpad does not curre
 
 ## User: use the shared integration
 
-Choose **Shared mkdev integration**, enter `https://basecamp-obsidian-sync.fodoj.com` as the service URL, and click **Connect to Basecamp**. Approve access and return to Obsidian. Load your accounts and projects in the settings. For an organization-hosted integration, use your administrator's service URL instead.
+Choose **Shared mkdev integration** and click **Connect to Basecamp**. The **Login service URL** is filled in automatically. Approve access and return to Obsidian. Load your accounts and projects in the settings. For an organization-hosted integration, replace the URL with your administrator's service URL. Clearing it restores the mkdev default.
 
 If the browser does not open Obsidian, copy the full callback/deep-link URL into **Complete login manually**. Pending logins expire after ten minutes; restart the connection if necessary. The callback must complete in the same vault and on the same device that started it.
 
