@@ -39,11 +39,17 @@ A draft visible to a maintainer is insufficient for distribution to testers. BRA
 - [x] Tag `0.1.6` exactly matches `manifest.json`; `package.json`, `manifest.json` and `versions.json` agree.
 - [x] Attach the **individual** `main.js`, `manifest.json` and `styles.css` files to the release, plus the optional ZIP.
 - [x] Review and publish the release created by the included workflow. Both the main-branch and tagged-release checks passed for commit `58415f373a5782c702b98b4ca0684ecec920d0e3`.
-- [ ] Follow the current [Obsidian submission guide](https://docs.obsidian.md/Plugins/Releasing/Submit%20your%20plugin): sign in to [community.obsidian.md](https://community.obsidian.md), link the owning GitHub account, add the plugin and resolve automated review feedback.
+- [x] Follow the current [Obsidian submission guide](https://docs.obsidian.md/Plugins/Releasing/Submit%20your%20plugin): sign in to [community.obsidian.md](https://community.obsidian.md), connect GitHub, add the plugin and publish the listing.
+- [x] Confirm the automated review completed with no blocking errors for release `0.1.6` and commit `58415f373a5782c702b98b4ca0684ecec920d0e3`.
+- [ ] Verify installation from Obsidian's built-in directory after the new listing reaches app search.
 
 The current submission guide uses the community website. Do not assume that an older tutorial's pull request to `community-plugins.json` is the current submission workflow.
 
-The public release is ready for submission. The remaining step is the maintainer's Obsidian Community sign-in, GitHub connection and submission of the entry. Publication on GitHub alone does not make it available in Obsidian's built-in directory.
+The [public Community listing](https://community.obsidian.md/plugins/basecamp-sync) was published on 2026-09-08 under the maintainer's `fodoj` Community account. The connected GitHub account's membership in `mkdev-me` had to be made public for repository ownership verification. The maintainer approved the developer policies and maintenance agreement before submission.
+
+Obsidian's review completed for `0.1.6` with no blocking errors. Its build verification reproduced the release `main.js` byte for byte, and dependency scanning found no known vulnerabilities. A non-blocking warning remains: the plugin's settings do not appear in the global settings search on Obsidian 1.13 or later because the settings tab uses the older rendering API. Recommendations cover adding release artifact attestations, the optional manual-install ZIP that Obsidian itself does not download, and vault-path enumeration used for note selection.
+
+A search in Obsidian 1.13.7's built-in Community browser, using the isolated example vault, did not yet find the new entry immediately after review. Installation through the built-in directory remains unverified. Obsidian documents that successful new submissions can take [up to 24 hours to reach app search and downloads](https://obsidian.md/blog/future-of-plugins/). BRAT and the public release files remain available during that delay.
 
 ### Submission details
 
@@ -52,9 +58,13 @@ The public release is ready for submission. The remaining step is the maintainer
 - Name: **Basecamp Sync**
 - Description: **Sync selected notes and folders to formatted Basecamp documents.**
 - Release: **0.1.6**
+- Public listing: `https://community.obsidian.md/plugins/basecamp-sync`
+- Maintainer dashboard: `https://community.obsidian.md/account/plugins/basecamp-sync`
+- Community owner: **fodoj**
+- Payments label: **Optional payment**, because Obsidian requires this label for integrations with services that offer paid plans. The plugin is free and MIT licensed; Basecamp's account and plan terms apply.
 - Screenshot: `docs/images/selection-preview.png` (already embedded in the README)
 
-Sign in with the maintainer's Obsidian account and connect the GitHub account that can verify repository ownership. In **Plugins → New plugin**, enter the repository URL and choose the existing mkdev community organization if available, or the maintaining account. The owner must accept the developer policies and confirm continued support, or removal/transfer if maintenance ends. Submit, then resolve any review errors before publishing the listing.
+Manage the existing entry through the maintainer dashboard; do not submit a duplicate. Future GitHub releases are reviewed automatically. Resolve any blocking review errors with an incremented release version, and verify app availability separately from publication on GitHub or the Community website.
 
 ## Real-client regression checklist
 
@@ -77,6 +87,7 @@ Use a dedicated test vault and a disposable Basecamp project. The plugin writes 
 
 - [Obsidian build guide](https://docs.obsidian.md/Plugins/Getting%20started/Build%20a%20plugin)
 - [Obsidian plugin submission requirements](https://docs.obsidian.md/community-directory/submission-requirements-for-plugins)
+- [Obsidian Community launch FAQ: review, app availability and payment labels](https://obsidian.md/blog/future-of-plugins/)
 - [Obsidian Secret storage](https://docs.obsidian.md/Plugins/Guides/Store%20secrets)
 - [Basecamp rich-text HTML and attachments](https://github.com/basecamp/bc-api/blob/master/sections/rich_text.md)
 - [Basecamp authentication](https://github.com/basecamp/bc-api/blob/master/sections/authentication.md)
