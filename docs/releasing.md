@@ -16,7 +16,7 @@ The mkdev OAuth app and hosted login service were provisioned on 2026-09-07. HTT
 
 ## GitHub releases
 
-The plugin repository is [mkdev-me/obsidian-basecamp-sync](https://github.com/mkdev-me/obsidian-basecamp-sync). Versions 0.1.0–0.1.5 were private BRAT prereleases; 0.1.6 is prepared as the first public release. The hosted login service remains in mkdev's private infrastructure repository, as disclosed in the README.
+The plugin repository is [mkdev-me/obsidian-basecamp-sync](https://github.com/mkdev-me/obsidian-basecamp-sync). Versions 0.1.0–0.1.5 were private BRAT prereleases; [0.1.6](https://github.com/mkdev-me/obsidian-basecamp-sync/releases/tag/0.1.6) was published as the first public release on 2026-09-08. Its three individual assets were downloaded without authentication and matched the tested build byte for byte; the ZIP contents and license notices also matched. The hosted login service remains in mkdev's private infrastructure repository, as disclosed in the README.
 
 1. Update `manifest.json`, `package.json`, the lockfile version and `versions.json` together, and add release notes to `CHANGELOG.md`.
 2. Run `npm run package`, push the commit, and confirm the **Check** workflow passes.
@@ -34,14 +34,16 @@ A draft visible to a maintainer is insufficient for distribution to testers. BRA
 - [x] Obtain maintainer acceptance of the focused desktop/iOS release checks; see the verification record above.
 - [x] Review README, privacy policy, license, screenshot and the callback/service deployment instructions.
 - [x] Check the published community directory for `basecamp-sync`; no matching ID or Basecamp entry was present on 2026-09-08. The submission form makes the final availability check.
-- [ ] Push this source to a public GitHub repository controlled by mkdev. The repository must contain `README.md`, `LICENSE` and `manifest.json` at the root.
+- [x] Publish the source in mkdev's public GitHub repository with `README.md`, `LICENSE` and `manifest.json` at the root.
 - [x] Run `npm ci`, `npm run package` and `npm audit` for 0.1.6: 51 tests, lint, typecheck and mobile bundle check passed; no dependency vulnerabilities were reported.
-- [ ] Create a version tag that exactly matches `manifest.json` (no `v` prefix). Keep `package.json`, `manifest.json` and `versions.json` consistent.
-- [ ] Attach the **individual** `main.js`, `manifest.json` and `styles.css` files to that GitHub release. A ZIP alone cannot be installed by the directory.
-- [ ] Review and publish the draft release created by the included release workflow.
+- [x] Tag `0.1.6` exactly matches `manifest.json`; `package.json`, `manifest.json` and `versions.json` agree.
+- [x] Attach the **individual** `main.js`, `manifest.json` and `styles.css` files to the release, plus the optional ZIP.
+- [x] Review and publish the release created by the included workflow. Both the main-branch and tagged-release checks passed for commit `58415f373a5782c702b98b4ca0684ecec920d0e3`.
 - [ ] Follow the current [Obsidian submission guide](https://docs.obsidian.md/Plugins/Releasing/Submit%20your%20plugin): sign in to [community.obsidian.md](https://community.obsidian.md), link the owning GitHub account, add the plugin and resolve automated review feedback.
 
 The current submission guide uses the community website. Do not assume that an older tutorial's pull request to `community-plugins.json` is the current submission workflow.
+
+The public release is ready for submission. The remaining step is the maintainer's Obsidian Community sign-in, GitHub connection and submission of the entry. Publication on GitHub alone does not make it available in Obsidian's built-in directory.
 
 ### Submission details
 
