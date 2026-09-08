@@ -4,7 +4,7 @@ Publish selected Obsidian notes as formatted documents in Basecamp Docs & Files.
 
 Built by [mkdev](https://mkdev.me). MIT licensed. Uses the [official Basecamp TypeScript SDK](https://github.com/basecamp/basecamp-sdk/tree/main/typescript).
 
-**Status:** installable development release. Desktop loading, settings and previews were checked in Obsidian 1.13.7. Automated checks cover the sync engine, authentication, native HTTP adapter and bundled SDK under mobile restrictions. The shared mkdev integration is registered and deployed; its service URL is filled in automatically. Live Basecamp and physical iOS acceptance checks remain in [the release checklist](docs/releasing.md).
+**Status:** installable development release. Desktop login, live Basecamp sync and folder mapping were verified in Obsidian 1.13.7 on macOS. The maintainer confirmed iOS syncing works on 2026-09-08 after the initial sign-in on that device. The shared mkdev integration is registered and deployed; its service URL is filled in automatically. See [the release checklist](docs/releasing.md) for verification details and remaining checks.
 
 ## What it does
 
@@ -55,7 +55,7 @@ Open **Settings → Basecamp Sync** and choose a login method:
 | My own integration | The user or their organization | Enter the client ID, select the client secret in Obsidian Secret storage, and set the registered redirect URI. |
 | Existing access token | No new registration if you already have a valid bearer token | Advanced option. Replace the token yourself when it expires. |
 
-See [authentication and integration setup](docs/authentication.md) for the complete instructions, including a shared service that can also be self-hosted. Connect separately on each device. Tokens and private client secrets are stored in Obsidian's device-local Secret storage, outside plugin `data.json` and note properties. This storage is shared with other plugins in the vault; it is not a separate password-manager security boundary.
+See [authentication and integration setup](docs/authentication.md) for the complete instructions, including a shared service that can also be self-hosted. Connect once on each device, even if your vault and plugin settings have already synced there. The plugin refreshes OAuth tokens automatically after that initial sign-in. Tokens and private client secrets are stored in Obsidian's device-local Secret storage, outside plugin `data.json` and note properties. This storage is shared with other plugins in the vault; it is not a separate password-manager security boundary.
 
 ## Choose what to sync
 

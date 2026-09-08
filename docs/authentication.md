@@ -6,7 +6,7 @@ The official [SDK authentication guide](https://github.com/basecamp/basecamp-sdk
 
 Basecamp's API and SDK documentation currently disagree about personal access tokens. The plugin accepts an existing bearer token if you already have one, but does not claim a universally available personal-token creation workflow.
 
-Ordinary users do **not** need their own OAuth app. The mkdev integration was registered and deployed on 2026-09-07 at `https://basecamp-obsidian-sync.fodoj.com`. Its HTTPS health check and login-start routing pass. The plugin fills in this URL automatically, including when upgrading an installation with an empty saved URL. Custom service URLs are preserved. Real desktop and iOS login and renewal acceptance checks remain pending.
+Ordinary users do **not** need their own OAuth app. The mkdev integration was registered and deployed on 2026-09-07 at `https://basecamp-obsidian-sync.fodoj.com`. Its HTTPS health check and login-start routing pass. The plugin fills in this URL automatically, including when upgrading an installation with an empty saved URL. Custom service URLs are preserved. Live desktop login was verified, and the maintainer confirmed iOS syncing works after its initial sign-in on 2026-09-08. Live token-renewal checks remain in [the release checklist](releasing.md).
 
 ## Maintainer: prepare the shared mkdev integration
 
@@ -35,6 +35,8 @@ The challenge protects the service-to-Obsidian handoff; Launchpad does not curre
 Choose **Shared mkdev integration** and click **Connect to Basecamp**. The **Login service URL** is filled in automatically. Approve access and return to Obsidian. Load your accounts and projects in the settings. For an organization-hosted integration, replace the URL with your administrator's service URL. Clearing it restores the mkdev default.
 
 If the browser does not open Obsidian, copy the full callback/deep-link URL into **Complete login manually**. Pending logins expire after ten minutes; restart the connection if necessary. The callback must complete in the same vault and on the same device that started it.
+
+Connect once on each device: vault sync carries your notes and plugin settings, but login credentials stay in that device's Secret storage. An initial sign-in on iOS after connecting on desktop is expected. The plugin refreshes OAuth tokens automatically; routine syncing should not require repeated sign-ins.
 
 ## User: use your own integration
 
