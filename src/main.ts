@@ -4,7 +4,7 @@ import { gateway, sdkClient, type Gateway } from './basecamp';
 import { DEFAULT_BROKER_URL, DEFAULT_SETTINGS, type Binding, type Note, type Settings, documentUrl, noteUri,
   parseBinding, positiveId, sha256 } from './model';
 import { renderNote, type Rendered } from './render';
-import { selection } from './selection';
+import { relativeNotePath, selection } from './selection';
 import { BasecampSettingsTab } from './settings';
 import { remoteHash, SyncEngine, type SyncResult } from './sync';
 import { clearHttpCache } from './transport';
@@ -111,7 +111,7 @@ export default class BasecampSyncPlugin extends Plugin {
     return this.api ||= gateway((this.activeSettings || this.settings).accountId, () => this.auth.accessToken());
   }
   selectedFiles(): TFile[] {
-    const accepts = selection(this.settings.includes, this.settings.excludes);
+    const accepts = selection(this.settings.includes, this.settings.excludes, this.settings.sourceFolder);
     return this.app.vault.getMarkdownFiles().filter(file => accepts(file.path) &&
       this.app.metadataCache.getFileCache(file)?.frontmatter?.basecamp_sync !== false);
   }
@@ -190,7 +190,7 @@ export default class BasecampSyncPlugin extends Plugin {
 
   private queue(path: string): void {
     if (!this.settings.autoSync || this.unloading) return;
-    try { if (!selection(this.settings.includes, this.settings.excludes)(path)) return; }
+    try { if (!selection(this.settings.includes, this.settings.excludes, this.settings.sourceFolder)(path)) return; }
     catch (error) { this.report(error); return; }
     this.dirty.add(path);
     if (this.timer !== undefined) window.clearTimeout(this.timer);
@@ -250,9 +250,18 @@ export default class BasecampSyncPlugin extends Plugin {
       const notes = await Promise.all(this.selectedFiles().map(file => this.readNote(file.path)));
       const modal = new Modal(this.app);
       modal.setTitle('Preview Basecamp sync');
-      modal.contentEl.createEl('p', { text: `${notes.filter(note => !note.disabled).length} selected notes. New documents are visible to project members. Linked documents are updated when their content changes.` });
+      const count = notes.filter(note => !note.disabled).length;
+      modal.contentEl.createEl('p', { text: `${count} selected ${count === 1 ? 'note' : 'notes'}. New documents are visible to project members. Linked documents are updated when their content changes.` });
+      if (this.settings.sourceFolder) modal.contentEl.createEl('p', { text: `Source folder: ${this.settings.sourceFolder}. Paths below it map into the selected Basecamp destination.` });
       const list = modal.contentEl.createEl('ul');
-      for (const note of notes.slice(0, 200)) list.createEl('li', { text: `${note.path} — ${note.binding?.document ? 'linked' : 'new'}` });
+      for (const note of notes.slice(0, 200)) {
+        const relative = relativeNotePath(note.path, this.settings.sourceFolder)!;
+        const folder = this.settings.mirrorFolders ? relative.split('/').slice(0, -1).join('/') : '';
+        const destination = [folder, note.title].filter(Boolean).join('/');
+        list.createEl('li', { text: note.binding?.document
+          ? `${note.path} — linked; keeps its current Basecamp location`
+          : `${note.path} → ${destination} — new` });
+      }
       if (notes.length > 200) modal.contentEl.createEl('p', { text: `And ${notes.length - 200} more notes.` });
       new Setting(modal.contentEl).addButton(button => button.setButtonText('Sync selected notes').setCta()
         .onClick(() => { modal.close(); void this.sync(); }));

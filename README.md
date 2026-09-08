@@ -11,13 +11,14 @@ Built by [mkdev](https://mkdev.me). MIT licensed. Uses the [official Basecamp Ty
 - Select folders, individual Markdown files or glob patterns; exclusions take precedence.
 - Create Basecamp documents and update their title and content in place.
 - Optionally create matching Basecamp folders for new documents.
+- Map a source folder in your vault into the chosen Basecamp destination, preserving only its subfolders.
 - Preview your selection and the converted formatting before sending anything.
 - Sync manually, or after a configurable delay following edits on a particular device.
 - Preserve headings, emphasis, lists, checkboxes, quotes and code blocks. Convert tables to readable labeled rows.
 - Upload local embedded images and files, and connect links between synced notes.
 - Check for edits in Basecamp before replacing a document. Recover interrupted creates without blindly posting another copy.
 
-The plugin is designed for desktop, iOS and Android, using Obsidian APIs and browser APIs only. Obsidian **1.11.4 or later** is required for Secret storage. There is no background process, periodic polling, framework, telemetry or AI dependency. The production bundle is approximately **363 KiB** uncompressed, including third-party license notices.
+The plugin is designed for desktop, iOS and Android, using Obsidian APIs and browser APIs only. Obsidian **1.11.4 or later** is required for Secret storage. There is no background process, periodic polling, framework, telemetry or AI dependency. The production bundle is approximately **364 KiB** uncompressed, including third-party license notices.
 
 ## Install
 
@@ -30,7 +31,7 @@ The plugin is designed for desktop, iOS and Android, using Obsidian APIs and bro
 5. Select **Latest version**, enable **Enable after installing the plugin**, then add the plugin. Select a specific version instead if you want to pin it.
 6. Open **Settings → Basecamp Sync** and connect to Basecamp.
 
-BRAT installs the files and can check for future releases. The same process works on desktop and mobile, without building the plugin or copying files manually. Version `0.1.2` is a development pre-release; BRAT includes pre-releases when tracking the latest version.
+BRAT installs the files and can check for future releases. The same process works on desktop and mobile, without building the plugin or copying files manually. Version `0.1.3` is a development pre-release; BRAT includes pre-releases when tracking the latest version.
 
 **Private repository access:** your GitHub account must have access to this repository. Create a [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) with **Resource owner: mkdev-me**, **Only selected repositories: obsidian-basecamp-sync**, and **Contents: Read-only**. Complete organization approval if GitHub requires it. In BRAT's add-plugin dialog, use **GitHub token** to add/select the token through Obsidian's Secret storage. Set it up on each device; secrets are device-local. This token is for downloading plugin releases; Basecamp login is configured separately. Once the repository is public, a GitHub token is optional. See [BRAT's private repository guide](https://github.com/TfTHacker/obsidian42-brat/blob/main/BRAT-DEVELOPER-GUIDE.md#access-to-private-repositories).
 
@@ -85,7 +86,18 @@ To keep a note private regardless of folder selection, add this property:
 basecamp_sync: false
 ```
 
-With **Preserve folders** enabled, `Work/Handbook/Welcome.md` becomes a document inside `Work/Handbook` below the chosen Basecamp destination. Existing Basecamp folders with exactly matching names are reused; ambiguous duplicates stop that note's sync.
+Set **Source folder** to the vault folder that should map directly into your Basecamp destination. With **Preserve folders** enabled, only the folders below this root are recreated. Your local folders and notes stay where they are. For example:
+
+| Setting or path | Value |
+| --- | --- |
+| Source folder | `Projects/Writing/Basecamp` |
+| Include | `Projects/Writing/Basecamp/Standalone Content/**/*.md` |
+| Local note | `Projects/Writing/Basecamp/Standalone Content/External Highlights/KARS/Note.md` |
+| Basecamp location | `Standalone Content/External Highlights/KARS/Note` below the chosen destination |
+
+Include and exclude patterns remain relative to the **vault root**, including the source folder prefix. Notes outside the source folder cannot sync. Leave Source folder empty to preserve paths from the vault root, as earlier versions did. Turn Preserve folders off to put every new document directly in the destination.
+
+Existing Basecamp folders with exactly matching names are reused; ambiguous duplicates stop that note's sync. **Preview selection** shows where each new document will go. Changing Source folder affects new documents; already linked documents keep their current Basecamp location. Move those in Basecamp and link the note to the resulting document URL if its ID changes. The plugin never moves or deletes existing remote documents automatically.
 
 New documents are published as active documents visible to project members, with client visibility off and an empty subscriber list. Basecamp still controls its own activity feeds, permissions and notification behavior. Existing documents retain their visibility and subscriptions.
 
