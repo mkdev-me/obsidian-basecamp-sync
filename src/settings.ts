@@ -95,17 +95,31 @@ export class BasecampSettingsTab extends PluginSettingTab {
     this.text('Docs & Files or folder ID', 'Loading a project selects its Docs & Files root. Paste a Basecamp folder ID to use a subfolder.', 'vaultId');
 
     new Setting(el).setName('Notes to sync').setHeading();
-    this.text('Source folder', 'Map this vault folder directly into the Basecamp destination. Only notes below it can sync. Leave blank to use the vault root.',
+    el.createEl('p', { text: 'Source folder controls where paths start in Basecamp. Include chooses which notes to send. Your local files and folders stay where they are.' });
+    this.text('Source folder', 'The folder in your vault that maps directly to the Basecamp destination above. Its name and parent folders are omitted from Basecamp paths. Only notes inside it can sync. Leave blank to keep the full vault path.',
       'sourceFolder', 'Projects/Writing/Basecamp');
     for (const [key, name, description] of [
-      ['includes', 'Include', 'One vault-relative note path, folder or glob per line, including the source folder prefix. Examples: Work, Work/Plan.md, Work/**/*.md. Empty selects nothing.'],
-      ['excludes', 'Exclude', 'One vault-relative pattern per line. Exclusions win. Set basecamp_sync: false in a note to exclude it.'],
+      ['includes', 'Include', 'Choose notes using full paths from your vault root, including the source folder prefix. Enter one note, folder or pattern per line. A folder includes its subfolders; **/*.md matches Markdown notes at any depth. Empty selects nothing.'],
+      ['excludes', 'Exclude', 'Optional. Use the same full vault paths or patterns as Include, one per line. Matches are skipped even if included. Set basecamp_sync: false in a note to skip it.'],
     ] as const) new Setting(el).setName(name).setDesc(description).addTextArea(text => text
       .setValue(settings[key].join('\n')).onChange(async value => {
         settings[key] = value.split('\n').map(item => item.trim()).filter(Boolean); await save();
       }));
-    new Setting(el).setName('Preserve folders').setDesc('Recreate folders below the source folder in Basecamp. Existing linked documents keep their current Basecamp location.')
+    new Setting(el).setName('Preserve folders').setDesc('On: keep the subfolders below the source folder. Off: put every new document directly in the Basecamp destination. Existing linked documents stay in their current location.')
       .addToggle(toggle => toggle.setValue(settings.mirrorFolders).onChange(async value => { settings.mirrorFolders = value; await save(); }));
+    const example = el.createDiv({ cls: 'basecamp-sync-preview' });
+    example.createEl('strong', { text: 'Folder mapping example' });
+    example.createEl('p', { text: 'With folder preservation on:' });
+    for (const [label, path] of [
+      ['Source folder: ', 'Work/Basecamp'],
+      ['Include: ', 'Work/Basecamp/Articles'],
+      ['Obsidian note: ', 'Work/Basecamp/Articles/Plan.md'],
+      ['Basecamp location: ', 'Selected destination → Articles → Plan'],
+    ]) {
+      const row = example.createEl('p', { text: label });
+      row.createEl('code', { text: path });
+    }
+    example.createEl('p', { text: 'Only the selected folder and its subfolders sync. The source folder and its parents are omitted from Basecamp paths.' });
     new Setting(el).setName('Upload local attachments').setDesc('Upload embedded images and files referenced by selected notes, up to 20 MB each. Embedded notes remain links.')
       .addToggle(toggle => toggle.setValue(settings.uploadAttachments).onChange(async value => { settings.uploadAttachments = value; await save(); }));
     new Setting(el).setName('Sync after edits on this device').setDesc('Runs only while Obsidian is open. Enable on one device at a time; allow vault sync to finish before switching devices.')
@@ -115,7 +129,8 @@ export class BasecampSettingsTab extends PluginSettingTab {
         const delay = Number(value);
         if (Number.isFinite(delay) && delay >= 5 && delay <= 300) { settings.debounceSeconds = delay; await save(); }
       }));
-    new Setting(el).addButton(button => button.setButtonText('Preview selection').onClick(() => { void this.plugin.showPlan(); }))
+    new Setting(el).setDesc('Preview selection shows the notes and their Basecamp locations before anything is sent. Sync now publishes the selected notes and updates linked documents.')
+      .addButton(button => button.setButtonText('Preview selection').onClick(() => { void this.plugin.showPlan(); }))
       .addButton(button => button.setButtonText('Sync now').setCta().onClick(() => { void this.plugin.sync(); }));
   }
 

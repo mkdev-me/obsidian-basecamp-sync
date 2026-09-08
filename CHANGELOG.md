@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4
+
+- Explain the difference between Source folder and Include directly in settings, with an Obsidian-to-Basecamp folder mapping example.
+- Clarify full vault paths, recursive folder selection, exclusions, and both Preserve folders options.
+- Explain that Preview selection checks note destinations before publishing and linked documents stay in their current Basecamp location.
+
 ## 0.1.3
 
 - Add a Source folder setting to map a vault subtree directly into the chosen Basecamp destination without copying its ancestor folders.
