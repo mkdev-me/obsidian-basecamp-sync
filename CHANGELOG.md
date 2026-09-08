@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5
+
+- Remove the automatic Open in Obsidian and Basecamp folder footer links entirely, without adding hidden sync markers.
+- Remove old footers on the next sync of selected linked notes, even when the note text is unchanged, while retaining remote-edit conflict checks.
+- Pause uncertain first uploads until the user reconciles and links the existing document instead of searching for a marker in published content.
+
 ## 0.1.4
 
 - Explain the difference between Source folder and Include directly in settings, with an Obsidian-to-Basecamp folder mapping example.

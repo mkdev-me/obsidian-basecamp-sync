@@ -1,6 +1,6 @@
 # Privacy
 
-Basecamp Sync sends selected note titles and rendered text, and optionally embedded local files, to the Basecamp account and project chosen by the user. Note paths and vault names are included in source links. Readers with access to those Basecamp documents can see the published content and links.
+Basecamp Sync sends selected note titles and rendered text, and optionally embedded local files, to the Basecamp account and project chosen by the user. It adds no source backlink, footer or hidden sync marker. Links written in a note may resolve to Obsidian URLs containing vault names and note paths. Readers with access to those Basecamp documents can see the published content and links.
 
 The plugin does not collect telemetry, contact analytics services, use AI services or execute embedded third-party note renderers. It makes no network request on load. Automatic publication is opt-in on each device and only runs for configured selections while Obsidian is open.
 

@@ -16,13 +16,15 @@ The runtime consists of a small Obsidian shell around a testable one-way sync en
 
 | Location | Contents |
 | --- | --- |
-| Note properties, `basecamp_sync` | Stable identity, account/project/root/vault/document IDs, generated document URL, content fingerprints and pending-create marker |
+| Note properties, `basecamp_sync` | Stable identity, account/project/root/vault/document IDs, generated document URL, content fingerprints and pending-create flag |
 | Plugin `data.json` | Selection and destination settings, names of user-managed secret entries, and per-document attachment hashes/references |
 | Obsidian Secret storage | OAuth session, pending login, selected personal client secret or access token |
 | Obsidian device-local storage | Whether automatic sync is enabled on this device |
 | Memory only | Bounded HTTP body cache (64 entries, 8 MB total, 1 MB per entry), attachment digest cache and current queue |
 
-Note properties are the cross-device source of document identity. They must arrive on another device before that device publishes the note. All note properties are excluded from the published body. Obsidian links include vault/note names and the recovery identity, so Basecamp project readers can see those names.
+Note properties are the cross-device source of document identity. They must arrive on another device before that device publishes the note. All note properties are excluded from the published body. The renderer adds no footer, backlink or hidden sync marker. Links written in the note may resolve to Obsidian URLs containing vault names and note paths.
+
+The content fingerprint includes rendered HTML and link/attachment dependencies. Version 0.1.5 changes its format so the next sync refreshes unchanged notes that were published with the old footer. Cleanup uses the normal document update and conflict checks.
 
 ## Mobile adaptation of SDK 0.16.0
 
@@ -42,4 +44,4 @@ Obsidian's native HTTP API cannot cancel an in-flight native request. Cancellati
 
 The Basecamp document API has no atomic compare-and-swap. The engine checks canonical title/content fingerprints both before preparation and immediately before replacing a changed document, but another writer can still race the final request. Unchanged local content does not fetch or overwrite the remote document. Create requests are never blindly retried after ambiguous failures. Known definitive rejections clear the pending-create flag so a later manual retry is possible.
 
-Remote identity is never inferred from a title. Interrupted creates are recovered only by an exact per-note marker; duplicate identities anywhere in the vault block publication. Existing document moves and remote deletions are deliberately not mirrored. Bulk cross-device coordination, two-way merging and server-hosted sync are outside this release.
+Remote identity is never inferred from a title or content. When a create has an unknown outcome and no confirmed document ID, sync pauses until the user reconciles it in Basecamp and explicitly links the document. Duplicate identities anywhere in the vault block publication. Existing document moves and remote deletions are deliberately not mirrored. Bulk cross-device coordination, two-way merging and server-hosted sync are outside this release.

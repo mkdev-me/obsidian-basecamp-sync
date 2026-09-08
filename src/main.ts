@@ -143,10 +143,7 @@ export default class BasecampSyncPlugin extends Plugin {
 
   async render(note: Note, upload: boolean): Promise<Rendered> {
     const settings = this.activeSettings || this.settings;
-    const sourceUrl = noteUri(this.app.vault.getName(), note.path);
-    const binding = note.binding;
-    const recoveryUrl = binding ? `https://3.basecamp.com/${binding.account}/buckets/${binding.project}/vaults/${binding.vault}?basecamp-sync-id=${binding.id}` : undefined;
-    return renderNote(note.markdown, { sourceUrl, recoveryUrl, resolve: async (raw, embed) => {
+    return renderNote(note.markdown, { resolve: async (raw, embed) => {
       let target = raw;
       try { target = decodeURIComponent(raw); } catch { /* A literal percent is a valid filename. */ }
       if (/^[a-z][a-z\d+.-]*:/i.test(target) || target.startsWith('//'))

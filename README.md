@@ -16,7 +16,7 @@ Built by [mkdev](https://mkdev.me). MIT licensed. Uses the [official Basecamp Ty
 - Sync manually, or after a configurable delay following edits on a particular device.
 - Preserve headings, emphasis, lists, checkboxes, quotes and code blocks. Convert tables to readable labeled rows.
 - Upload local embedded images and files, and connect links between synced notes.
-- Check for edits in Basecamp before replacing a document. Recover interrupted creates without blindly posting another copy.
+- Check for edits in Basecamp before replacing a document. Pause after an uncertain first upload to prevent duplicate documents.
 
 The plugin is designed for desktop, iOS and Android, using Obsidian APIs and browser APIs only. Obsidian **1.11.4 or later** is required for Secret storage. There is no background process, periodic polling, framework, telemetry or AI dependency. The production bundle is approximately **364 KiB** uncompressed, including third-party license notices.
 
@@ -31,7 +31,7 @@ The plugin is designed for desktop, iOS and Android, using Obsidian APIs and bro
 5. Select **Latest version**, enable **Enable after installing the plugin**, then add the plugin. Select a specific version instead if you want to pin it.
 6. Open **Settings → Basecamp Sync** and connect to Basecamp.
 
-BRAT installs the files and can check for future releases. The same process works on desktop and mobile, without building the plugin or copying files manually. Version `0.1.4` is a development pre-release; BRAT includes pre-releases when tracking the latest version.
+BRAT installs the files and can check for future releases. The same process works on desktop and mobile, without building the plugin or copying files manually. Version `0.1.5` is a development pre-release; BRAT includes pre-releases when tracking the latest version.
 
 **Private repository access:** your GitHub account must have access to this repository. Create a [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) with **Resource owner: mkdev-me**, **Only selected repositories: obsidian-basecamp-sync**, and **Contents: Read-only**. Complete organization approval if GitHub requires it. In BRAT's add-plugin dialog, use **GitHub token** to add/select the token through Obsidian's Secret storage. Set it up on each device; secrets are device-local. This token is for downloading plugin releases; Basecamp login is configured separately. Once the repository is public, a GitHub token is optional. See [BRAT's private repository guide](https://github.com/TfTHacker/obsidian42-brat/blob/main/BRAT-DEVELOPER-GUIDE.md#access-to-private-repositories).
 
@@ -105,6 +105,8 @@ New documents are published as active documents visible to project members, with
 
 The plugin writes a small `basecamp_sync` object to each published note's properties. It stores the destination, document identity and sync fingerprints. Keep those properties with the note when syncing your vault between devices. They contain no login credentials and are omitted from the published body.
 
+Published documents contain the rendered note content, without an added source link, folder link or hidden sync marker. After upgrading from a version that added a footer, the next sync removes it from selected linked documents, including unchanged notes. Existing conflict checks still protect edits made in Basecamp.
+
 - Edit a note and run **Sync current note** or **Sync selected notes**. Unchanged notes make no network requests.
 - Renaming or moving a linked note updates the same document. It does not relocate Basecamp folders or documents.
 - To take over an existing page, run **Link current note to existing document** and supply its document URL or ID. The next sync replaces its title and content with the note.
@@ -142,7 +144,7 @@ The local formatting preview never uploads anything. Final rendering in Basecamp
 - **One destination per vault configuration.** Select as many note sets as you need within it. Use another vault for an independent destination.
 - **One active writer at a time.** Basecamp's document API has no atomic conditional update or create idempotency key. Checks reduce accidental overwrites, but cannot prevent two simultaneous clients from racing. Enable automatic sync on one device and wait for vault synchronization before switching devices.
 - **Foreground operation.** iOS and Android may suspend Obsidian. Sync runs while the app is open. Credentials and pending login state survive restarts, but an interrupted operation may require a manual retry.
-- **Unknown create outcomes.** A recovery marker is saved before creating a document. After a lost response, the plugin searches for that marker and links the matching page. If the outcome cannot be established, it stops. Inspect Basecamp and link the existing page, or remove the note's sync properties only after confirming that no page was created.
+- **Unknown create outcomes.** A pending flag is saved in the local note's properties before creating a document. If the response is lost before its document ID is saved, sync stops rather than retrying the upload or guessing which document was created. Inspect Basecamp and use **Link current note to existing document**, or remove the note's sync properties only after confirming that no page was created.
 - **Attachments.** Per-document attachment references are cached in plugin data, content hashes avoid re-uploading unchanged files on the same device, and the HTTP cache is bounded and kept in memory. Another device may upload an attachment again if that cache did not sync.
 - **API support.** This uses the current Basecamp API, not Basecamp Classic or Basecamp 2.
 
