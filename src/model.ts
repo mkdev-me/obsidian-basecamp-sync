@@ -29,6 +29,7 @@ export interface Settings {
   accountId: string;
   projectId: string;
   vaultId: string;
+  sourceFolder: string;
   includes: string[];
   excludes: string[];
   mirrorFolders: boolean;
@@ -42,7 +43,7 @@ export const DEFAULT_SETTINGS: Settings = {
   authMode: 'shared', brokerUrl: DEFAULT_BROKER_URL, clientId: '',
   clientSecretName: '', tokenSecretName: '',
   redirectUri: 'obsidian://basecamp-sync',
-  accountId: '', projectId: '', vaultId: '', includes: [], excludes: [],
+  accountId: '', projectId: '', vaultId: '', sourceFolder: '', includes: [], excludes: [],
   mirrorFolders: true, uploadAttachments: true, autoSync: false, debounceSeconds: 15,
 };
 

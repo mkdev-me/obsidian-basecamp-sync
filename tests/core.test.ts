@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SETTINGS, type Binding, type Note, parseBinding, stripFrontmatter } from '../src/model';
 import type { Gateway, RemoteDocument } from '../src/basecamp';
-import { selection } from '../src/selection';
+import { relativeNotePath, selection } from '../src/selection';
 import { renderNote } from '../src/render';
 import { remoteHash, SyncEngine } from '../src/sync';
 
@@ -46,6 +46,20 @@ describe('selection and metadata', () => {
     const matches = selection(['Work/**/*.md', 'Inbox.md'], ['**/secret?.md']);
     for (const path of ['Work/Plan.md', 'Work/a/b/Plan.md', 'Inbox.md']) expect(matches(path)).toBe(true);
     for (const path of ['Work/secrets.md', 'Else/Inbox.md', '.obsidian/private.md']) expect(matches(path)).toBe(false);
+  });
+  it('maps paths below a source folder and restricts selection to that subtree', () => {
+    const root = 'Projects/Writing/Basecamp';
+    const path = `${root}/Standalone Content/External Highlights/KARS/Note.md`;
+    expect(relativeNotePath(path, `./${root}/`)).toBe('Standalone Content/External Highlights/KARS/Note.md');
+    expect(relativeNotePath(path, '')).toBe(path);
+    expect(relativeNotePath(`${root}-private/Note.md`, root)).toBeUndefined();
+    const matches = selection(['**/*.md'], ['**/Private/**'], root);
+    expect(matches(path)).toBe(true);
+    expect(matches(`${root}/Private/Note.md`)).toBe(false);
+    expect(matches(`${root}-private/Note.md`)).toBe(false);
+    expect(matches('Elsewhere/Note.md')).toBe(false);
+    for (const invalid of ['../Projects', 'Projects/../Writing', '/Users/me/Notes', 'Projects/**'])
+      expect(() => selection(['**/*.md'], [], invalid)).toThrow('Source folder');
   });
   it('removes all note properties and rejects unclosed YAML', () => {
     expect(stripFrontmatter('---\nsecret: hidden\n---\nHello')).toBe('Hello');
@@ -119,6 +133,59 @@ describe('formatted content', () => {
 });
 
 describe('sync engine', () => {
+  it('recreates only the folders below the source folder', async () => {
+    const { api, note, host } = setup();
+    note.path = 'Projects/Writing/Basecamp/Standalone Content/External Highlights/KARS/Note.md';
+    let id = 4;
+    vi.mocked(api.createFolder).mockImplementation(async (_parent, title) => ({ id: id++, title }));
+    const engine = new SyncEngine(host, api, { ...settings, includes: ['Projects/**/*.md'], sourceFolder: 'Projects/Writing/Basecamp' });
+    expect((await engine.run([note.path], []))[0]?.status).toBe('created');
+    expect(api.createFolder).toHaveBeenNthCalledWith(1, 3, 'Standalone Content');
+    expect(api.createFolder).toHaveBeenNthCalledWith(2, 4, 'External Highlights');
+    expect(api.createFolder).toHaveBeenNthCalledWith(3, 5, 'KARS');
+    expect(api.createFolder).toHaveBeenCalledTimes(3);
+    expect(api.createDocument).toHaveBeenCalledWith(6, note.title, expect.any(String));
+    expect(note.path).toBe('Projects/Writing/Basecamp/Standalone Content/External Highlights/KARS/Note.md');
+  });
+  it.each([
+    ['Projects/Writing/Basecamp/Note.md', true],
+    ['Projects/Writing/Basecamp/Nested/Note.md', false],
+  ])('places %s at the destination with preserve folders %s', async (path, mirrorFolders) => {
+    const { api, note, host } = setup(); note.path = path;
+    const engine = new SyncEngine(host, api, { ...settings, includes: ['Projects'], sourceFolder: 'Projects/Writing/Basecamp', mirrorFolders });
+    expect((await engine.run([path], []))[0]?.status).toBe('created');
+    expect(api.createFolder).not.toHaveBeenCalled();
+    expect(api.createDocument).toHaveBeenCalledWith(3, note.title, expect.any(String));
+  });
+  it('reuses matching Basecamp folders below the destination', async () => {
+    const { api, note, host } = setup(); note.path = 'Projects/Writing/Basecamp/KARS/Note.md';
+    vi.mocked(api.listFolders).mockResolvedValue([{ id: 44, title: 'KARS' }]);
+    const engine = new SyncEngine(host, api, { ...settings, includes: ['Projects'], sourceFolder: 'Projects/Writing/Basecamp' });
+    expect((await engine.run([note.path], []))[0]?.status).toBe('created');
+    expect(api.createFolder).not.toHaveBeenCalled();
+    expect(api.createDocument).toHaveBeenCalledWith(44, note.title, expect.any(String));
+  });
+  it('does not publish a note outside the source folder even with broad include patterns', async () => {
+    const { api, note, host } = setup();
+    const engine = new SyncEngine(host, api, { ...settings, includes: ['**/*.md'], sourceFolder: 'Projects/Writing/Basecamp' });
+    expect((await engine.run([note.path], []))[0]?.status).toBe('skipped');
+    expect(api.validateDestination).not.toHaveBeenCalled();
+    expect(api.createFolder).not.toHaveBeenCalled();
+    expect(api.createDocument).not.toHaveBeenCalled();
+  });
+  it('updates an existing document in place after the source folder changes', async () => {
+    const { engine, api, note, host } = setup();
+    await engine.run([note.path], []);
+    const vault = note.binding!.vault;
+    vi.mocked(api.createFolder).mockClear();
+    note.markdown = 'Updated';
+    const changed = new SyncEngine(host, api, { ...settings, sourceFolder: 'Work' });
+    expect((await changed.run([note.path], [note]))[0]?.status).toBe('updated');
+    expect(api.createFolder).not.toHaveBeenCalled();
+    expect(api.createDocument).toHaveBeenCalledTimes(1);
+    expect(api.updateDocument).toHaveBeenCalledWith(10, note.title, expect.any(String));
+    expect(note.binding!.vault).toBe(vault);
+  });
   it('creates once, checkpoints before posting, and does no remote work on unchanged content', async () => {
     const { engine, api, save, note } = setup();
     expect((await engine.run([note.path], []))[0]?.status).toBe('created');

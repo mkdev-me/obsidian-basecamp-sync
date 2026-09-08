@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.3
+
+- Add a Source folder setting to map a vault subtree directly into the chosen Basecamp destination without copying its ancestor folders.
+- Keep include/exclude patterns vault-relative and restrict synchronization to the chosen source folder.
+- Show destination paths for new notes in Preview selection. Existing linked documents keep their Basecamp location.
+- Reuse existing matching Basecamp folders and preserve the previous behavior when Source folder is empty.
+
 ## 0.1.2
 
 - Fill in the shared mkdev login service URL automatically, including empty URLs saved by earlier versions.

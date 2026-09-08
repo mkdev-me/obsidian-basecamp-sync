@@ -95,14 +95,16 @@ export class BasecampSettingsTab extends PluginSettingTab {
     this.text('Docs & Files or folder ID', 'Loading a project selects its Docs & Files root. Paste a Basecamp folder ID to use a subfolder.', 'vaultId');
 
     new Setting(el).setName('Notes to sync').setHeading();
+    this.text('Source folder', 'Map this vault folder directly into the Basecamp destination. Only notes below it can sync. Leave blank to use the vault root.',
+      'sourceFolder', 'Projects/Writing/Basecamp');
     for (const [key, name, description] of [
-      ['includes', 'Include', 'One note path, folder or glob per line. Examples: Work, Work/Plan.md, Work/**/*.md. Empty selects nothing.'],
-      ['excludes', 'Exclude', 'One pattern per line. Exclusions win. Set basecamp_sync: false in a note to exclude it.'],
+      ['includes', 'Include', 'One vault-relative note path, folder or glob per line, including the source folder prefix. Examples: Work, Work/Plan.md, Work/**/*.md. Empty selects nothing.'],
+      ['excludes', 'Exclude', 'One vault-relative pattern per line. Exclusions win. Set basecamp_sync: false in a note to exclude it.'],
     ] as const) new Setting(el).setName(name).setDesc(description).addTextArea(text => text
       .setValue(settings[key].join('\n')).onChange(async value => {
         settings[key] = value.split('\n').map(item => item.trim()).filter(Boolean); await save();
       }));
-    new Setting(el).setName('Preserve folders').setDesc('Create matching folders for new documents. Existing documents keep their Basecamp location when notes move.')
+    new Setting(el).setName('Preserve folders').setDesc('Recreate folders below the source folder in Basecamp. Existing linked documents keep their current Basecamp location.')
       .addToggle(toggle => toggle.setValue(settings.mirrorFolders).onChange(async value => { settings.mirrorFolders = value; await save(); }));
     new Setting(el).setName('Upload local attachments').setDesc('Upload embedded images and files referenced by selected notes, up to 20 MB each. Embedded notes remain links.')
       .addToggle(toggle => toggle.setValue(settings.uploadAttachments).onChange(async value => { settings.uploadAttachments = value; await save(); }));
@@ -117,7 +119,7 @@ export class BasecampSettingsTab extends PluginSettingTab {
       .addButton(button => button.setButtonText('Sync now').setCta().onClick(() => { void this.plugin.sync(); }));
   }
 
-  private text(name: string, description: string, key: 'brokerUrl' | 'clientId' | 'redirectUri' | 'accountId' | 'projectId' | 'vaultId', placeholder = ''): void {
+  private text(name: string, description: string, key: 'brokerUrl' | 'clientId' | 'redirectUri' | 'accountId' | 'projectId' | 'vaultId' | 'sourceFolder', placeholder = ''): void {
     new Setting(this.containerEl).setName(name).setDesc(description).addText(text => text
       .setPlaceholder(placeholder).setValue(this.plugin.settings[key]).onChange(async value => {
         this.plugin.settings[key] = value.trim(); await this.plugin.saveSettings();

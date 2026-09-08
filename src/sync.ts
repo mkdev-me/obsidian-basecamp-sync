@@ -1,7 +1,7 @@
 import type { Gateway, RemoteDocument } from './basecamp';
 import { type Binding, type Note, type Settings, documentUrl, positiveId, sha256 } from './model';
 import type { Rendered } from './render';
-import { selection } from './selection';
+import { relativeNotePath, selection } from './selection';
 
 export interface SyncHost {
   read(path: string): Promise<Note>;
@@ -36,7 +36,7 @@ export class SyncEngine {
     positiveId(this.settings.accountId);
     positiveId(this.settings.projectId);
     positiveId(this.settings.vaultId);
-    const selected = selection(this.settings.includes, this.settings.excludes);
+    const selected = selection(this.settings.includes, this.settings.excludes, this.settings.sourceFolder);
     const identities = new Map<string, number>();
     for (const note of allNotes) {
       if (!note.binding) continue;
@@ -85,7 +85,9 @@ export class SyncEngine {
   private async destination(path: string): Promise<number> {
     let parent = positiveId(this.settings.vaultId);
     if (!this.settings.mirrorFolders) return parent;
-    const parts = path.split('/').slice(0, -1);
+    const relative = relativeNotePath(path, this.settings.sourceFolder);
+    if (!relative) throw new Error('This note is outside the source folder.');
+    const parts = relative.split('/').slice(0, -1);
     for (const title of parts) {
       const key = `${parent}:${title}`;
       let id = this.folders.get(key);
