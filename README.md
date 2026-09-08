@@ -4,7 +4,19 @@ Publish selected Obsidian notes as formatted documents in Basecamp Docs & Files.
 
 Built by [mkdev](https://mkdev.me). MIT licensed. Uses the [official Basecamp TypeScript SDK](https://github.com/basecamp/basecamp-sdk/tree/main/typescript).
 
-**Status:** installable development release. Desktop login, live Basecamp sync and folder mapping were verified in Obsidian 1.13.7 on macOS. The maintainer confirmed iOS syncing works on 2026-09-08 after the initial sign-in on that device. The shared mkdev integration is registered and deployed; its service URL is filled in automatically. See [the release checklist](docs/releasing.md) for verification details and remaining checks.
+Works on desktop and iOS with Obsidian **1.11.4 or later**. Connect once on each device, choose a Basecamp destination, and preview the notes you want to publish.
+
+![Basecamp Sync selection preview showing example notes mapped below a source folder](docs/images/selection-preview.png)
+
+## Accounts, network access and privacy
+
+The plugin is free and MIT licensed. You need a Basecamp account with permission to write to the destination project; Basecamp's own account and plan terms apply. The shared mkdev integration needs no separate app registration or plugin subscription.
+
+- **Basecamp API** (`3.basecampapi.com`): receives selected note titles, rendered text and optional embedded attachments, and supplies accounts, projects and existing documents for sync.
+- **37signals Launchpad** (`launchpad.37signals.com`): handles Basecamp sign-in and authorization.
+- **mkdev login service** (`basecamp-obsidian-sync.fodoj.com`): exchanges authorization codes and renews tokens for the shared integration. It is hosted on Cloudflare and processes credentials during these requests; note text and attachments go directly to Basecamp. Its implementation is maintained in mkdev's private infrastructure repository and is not included in this open-source plugin. You can use **My own integration** to connect directly instead, or configure an organization-operated compatible login service.
+
+There is no client telemetry or analytics. The plugin does not read files outside your vault; credentials are stored through Obsidian's device-local Secret storage. It makes no network requests on load. See [Privacy](PRIVACY.md) for data handling and [Authentication](docs/authentication.md) for login options.
 
 ## What it does
 
@@ -18,24 +30,25 @@ Built by [mkdev](https://mkdev.me). MIT licensed. Uses the [official Basecamp Ty
 - Upload local embedded images and files, and connect links between synced notes.
 - Check for edits in Basecamp before replacing a document. Pause after an uncertain first upload to prevent duplicate documents.
 
-The plugin is designed for desktop, iOS and Android, using Obsidian APIs and browser APIs only. Obsidian **1.11.4 or later** is required for Secret storage. There is no background process, periodic polling, framework, telemetry or AI dependency. The production bundle is approximately **364 KiB** uncompressed, including third-party license notices.
+The plugin uses Obsidian APIs and browser APIs only. Desktop and iOS have been exercised; Android is supported by the same mobile-compatible build but has not been tested on a physical device. There is no background process, periodic polling, framework or AI dependency. The production bundle is approximately **364 KiB** uncompressed, including third-party license notices.
 
 ## Install
 
-### BRAT (desktop and mobile)
+### Community directory
+
+Community-directory publication is being prepared. Until the listing is approved, install with BRAT or the release files below. This section will be updated when the plugin is available in **Settings → Community plugins → Browse**.
+
+### BRAT (desktop and mobile, available now)
 
 1. Install and enable **[BRAT](https://github.com/TfTHacker/obsidian42-brat)** from Obsidian's community plugins. Use BRAT **2.2.0 or newer** and Obsidian **1.11.4 or newer**.
 2. Run **BRAT: Add a beta plugin for testing**, or use **Add beta plugin** in BRAT's settings.
 3. Enter `https://github.com/mkdev-me/obsidian-basecamp-sync` (the short form `mkdev-me/obsidian-basecamp-sync` also works). Use this HTTPS address, rather than the SSH clone address.
-4. While the repository is private, select a GitHub token as described below.
-5. Select **Latest version**, enable **Enable after installing the plugin**, then add the plugin. Select a specific version instead if you want to pin it.
-6. Open **Settings → Basecamp Sync** and connect to Basecamp.
+4. Select **Latest version**, enable **Enable after installing the plugin**, then add the plugin. Select a specific version instead if you want to pin it.
+5. Open **Settings → Basecamp Sync** and connect to Basecamp.
 
-BRAT installs the files and can check for future releases. The same process works on desktop and mobile, without building the plugin or copying files manually. Version `0.1.5` is a development pre-release; BRAT includes pre-releases when tracking the latest version.
+BRAT installs the files and can check for future releases. The same process works on desktop and mobile, without building the plugin or copying files manually. The public repository does not require a GitHub token. A token can still help with GitHub's API rate limits.
 
-**Private repository access:** your GitHub account must have access to this repository. Create a [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) with **Resource owner: mkdev-me**, **Only selected repositories: obsidian-basecamp-sync**, and **Contents: Read-only**. Complete organization approval if GitHub requires it. In BRAT's add-plugin dialog, use **GitHub token** to add/select the token through Obsidian's Secret storage. Set it up on each device; secrets are device-local. This token is for downloading plugin releases; Basecamp login is configured separately. Once the repository is public, a GitHub token is optional. See [BRAT's private repository guide](https://github.com/TfTHacker/obsidian42-brat/blob/main/BRAT-DEVELOPER-GUIDE.md#access-to-private-repositories).
-
-If BRAT reports that the repository or releases cannot be found, check the token's repository access, expiry and any pending organization approval. Signing in to GitHub in a browser does not sign BRAT in.
+Already using BRAT? If you pinned an earlier version, switch it to **Latest version** to receive updates. Basecamp authentication is separate from any GitHub token used for downloading releases.
 
 ### Manual installation or local development
 
@@ -55,7 +68,7 @@ Open **Settings → Basecamp Sync** and choose a login method:
 | My own integration | The user or their organization | Enter the client ID, select the client secret in Obsidian Secret storage, and set the registered redirect URI. |
 | Existing access token | No new registration if you already have a valid bearer token | Advanced option. Replace the token yourself when it expires. |
 
-See [authentication and integration setup](docs/authentication.md) for the complete instructions, including a shared service that can also be self-hosted. Connect once on each device, even if your vault and plugin settings have already synced there. The plugin refreshes OAuth tokens automatically after that initial sign-in. Tokens and private client secrets are stored in Obsidian's device-local Secret storage, outside plugin `data.json` and note properties. This storage is shared with other plugins in the vault; it is not a separate password-manager security boundary.
+See [authentication and integration setup](docs/authentication.md) for the complete instructions. Connect once on each device, even if your vault and plugin settings have already synced there. The plugin refreshes OAuth tokens automatically after that initial sign-in. Tokens and private client secrets are stored in Obsidian's device-local Secret storage, outside plugin `data.json` and note properties. This storage is shared with other plugins in the vault; it is not a separate password-manager security boundary.
 
 ## Choose what to sync
 
@@ -90,10 +103,10 @@ Set **Source folder** to the vault folder that should map directly into your Bas
 
 | Setting or path | Value |
 | --- | --- |
-| Source folder | `Projects/Writing/Basecamp` |
-| Include | `Projects/Writing/Basecamp/Standalone Content/**/*.md` |
-| Local note | `Projects/Writing/Basecamp/Standalone Content/External Highlights/KARS/Note.md` |
-| Basecamp location | `Standalone Content/External Highlights/KARS/Note` below the chosen destination |
+| Source folder | `Work/Basecamp` |
+| Include | `Work/Basecamp/Handbook` |
+| Local note | `Work/Basecamp/Handbook/Getting started.md` |
+| Basecamp location | `Handbook/Getting started` below the chosen destination |
 
 Include and exclude patterns remain relative to the **vault root**, including the source folder prefix. Notes outside the source folder cannot sync. Leave Source folder empty to preserve paths from the vault root, as earlier versions did. Turn Preserve folders off to put every new document directly in the destination.
 
@@ -150,7 +163,7 @@ The local formatting preview never uploads anything. Final rendering in Basecamp
 
 ## Development
 
-Requires Node.js 22.12+ for development and the optional login service.
+Requires Node.js 22.12+ for development.
 
 ```sh
 npm ci

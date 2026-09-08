@@ -1,7 +1,7 @@
 {
   "id": "basecamp-sync",
   "name": "Basecamp Sync",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "minAppVersion": "1.11.4",
   "description": "Sync selected notes and folders to formatted Basecamp documents.",
   "author": "mkdev",

@@ -10,18 +10,20 @@ Live desktop checks on 2026-09-08 in Obsidian 1.13.7 on macOS verified shared-in
 
 On 2026-09-08, the maintainer reported that syncing works on physical iOS and confirmed authentication was needed only for the first connection on that device. This is expected because credentials are device-local. Exact iOS and Obsidian versions and individual test scenarios were not recorded, so this confirms basic iOS use rather than every acceptance case below.
 
-The mkdev OAuth app and hosted login service were provisioned on 2026-09-07. HTTPS `/health` returned 200, login start pointed to the registered app and exact callback, and malformed requests were rejected. Terraform reported no changes after deployment. Live expired-token renewal, Android, the full formatting and attachment matrix, recovery scenarios and cross-device continuation of the same document remain to be checked. Do not count automated coverage or basic device checks as evidence that all of those scenarios passed.
+On 2026-09-08, the maintainer instructed that the focused checks for automatic token renewal, image/file uploads and updating the same document across desktop and iOS be treated as complete for this release. This is maintainer release acceptance; no additional independent test results or device versions were recorded for those checks.
 
-## Private BRAT releases
+The mkdev OAuth app and hosted login service were provisioned on 2026-09-07. HTTPS `/health` returned 200, login start pointed to the registered app and exact callback, and malformed requests were rejected. Terraform reported no changes after deployment. Android has not been exercised on a physical device. The broader regression checklist below is retained for future validation; it is not a claim that every scenario has been run on every device.
 
-The repository is [mkdev-me/obsidian-basecamp-sync](https://github.com/mkdev-me/obsidian-basecamp-sync). Keep its visibility private during testing. BRAT 2.2.0 supports private repositories with a token that has read access to repository contents, and supports published pre-releases. Install instructions are in [README.md](../README.md#brat-desktop-and-mobile).
+## GitHub releases
+
+The plugin repository is [mkdev-me/obsidian-basecamp-sync](https://github.com/mkdev-me/obsidian-basecamp-sync). Versions 0.1.0–0.1.5 were private BRAT prereleases; 0.1.6 is prepared as the first public release. The hosted login service remains in mkdev's private infrastructure repository, as disclosed in the README.
 
 1. Update `manifest.json`, `package.json`, the lockfile version and `versions.json` together, and add release notes to `CHANGELOG.md`.
 2. Run `npm run package`, push the commit, and confirm the **Check** workflow passes.
-3. Create and push a tag matching the manifest version exactly, without a `v` prefix. For the initial release: `git tag -a 0.1.0 -m '0.1.0'` and `git push origin 0.1.0`.
+3. Create and push a tag matching the manifest version exactly, without a `v` prefix.
 4. The **Draft release** workflow builds and tests the tagged source, then attaches individual `main.js`, `manifest.json` and `styles.css` assets plus the manual-install ZIP.
-5. Review the draft, mark it as a **pre-release**, and publish it. For the initial release: `gh release edit 0.1.0 --draft=false --prerelease --repo mkdev-me/obsidian-basecamp-sync`. Publishing a release does not change repository visibility.
-6. Verify the published release and download the three assets using an account with repository access. Confirm the manifest ID is `basecamp-sync`, its version matches the tag, and the files match the build. Test installation/update through BRAT with a repository token.
+5. Review the draft and publish it as a normal release. Use the prerelease flag only for future beta builds. Publishing a release does not change repository visibility.
+6. Download the three assets without GitHub authentication. Confirm the manifest ID is `basecamp-sync`, its version matches the tag, and the files match the tested build. Installation instructions are in the README.
 
 A draft visible to a maintainer is insufficient for distribution to testers. BRAT needs the individual release assets, not just GitHub's automatic source archives or the ZIP. **Latest version** tracks new releases; choosing a specific version pins it. Future releases repeat this workflow with an incremented version.
 
@@ -29,19 +31,30 @@ A draft visible to a maintainer is insufficient for distribution to testers. BRA
 
 - [x] Register and deploy the shared integration using [authentication.md](authentication.md).
 - [x] Set the deployed service URL in `DEFAULT_BROKER_URL` and use it for empty saved URLs.
-- [ ] Complete the real-client acceptance tests below, recording app/OS versions and date.
-- [ ] Review README, privacy policy, license, screenshots and the callback/service deployment instructions.
-- [ ] Confirm the chosen `basecamp-sync` plugin ID is available in the current community directory.
+- [x] Obtain maintainer acceptance of the focused desktop/iOS release checks; see the verification record above.
+- [x] Review README, privacy policy, license, screenshot and the callback/service deployment instructions.
+- [x] Check the published community directory for `basecamp-sync`; no matching ID or Basecamp entry was present on 2026-09-08. The submission form makes the final availability check.
 - [ ] Push this source to a public GitHub repository controlled by mkdev. The repository must contain `README.md`, `LICENSE` and `manifest.json` at the root.
-- [ ] Run `npm ci`, `npm run package` and `npm audit` from a clean checkout.
-- [ ] Create a version tag that exactly matches `manifest.json`, for example `0.1.0` (no `v` prefix). Keep `package.json`, `manifest.json` and `versions.json` consistent.
+- [x] Run `npm ci`, `npm run package` and `npm audit` for 0.1.6: 51 tests, lint, typecheck and mobile bundle check passed; no dependency vulnerabilities were reported.
+- [ ] Create a version tag that exactly matches `manifest.json` (no `v` prefix). Keep `package.json`, `manifest.json` and `versions.json` consistent.
 - [ ] Attach the **individual** `main.js`, `manifest.json` and `styles.css` files to that GitHub release. A ZIP alone cannot be installed by the directory.
 - [ ] Review and publish the draft release created by the included release workflow.
 - [ ] Follow the current [Obsidian submission guide](https://docs.obsidian.md/Plugins/Releasing/Submit%20your%20plugin): sign in to [community.obsidian.md](https://community.obsidian.md), link the owning GitHub account, add the plugin and resolve automated review feedback.
 
 The current submission guide uses the community website. Do not assume that an older tutorial's pull request to `community-plugins.json` is the current submission workflow.
 
-## Real-client acceptance tests
+### Submission details
+
+- Repository: `https://github.com/mkdev-me/obsidian-basecamp-sync`
+- Plugin ID: `basecamp-sync`
+- Name: **Basecamp Sync**
+- Description: **Sync selected notes and folders to formatted Basecamp documents.**
+- Release: **0.1.6**
+- Screenshot: `docs/images/selection-preview.png` (already embedded in the README)
+
+Sign in with the maintainer's Obsidian account and connect the GitHub account that can verify repository ownership. In **Plugins → New plugin**, enter the repository URL and choose the existing mkdev community organization if available, or the maintaining account. The owner must accept the developer policies and confirm continued support, or removal/transfer if maintenance ends. Submit, then resolve any review errors before publishing the listing.
+
+## Real-client regression checklist
 
 Use a dedicated test vault and a disposable Basecamp project. The plugin writes documents; choose a project where that is intended.
 
@@ -61,7 +74,7 @@ Use a dedicated test vault and a disposable Basecamp project. The plugin writes 
 ## Sources
 
 - [Obsidian build guide](https://docs.obsidian.md/Plugins/Getting%20started/Build%20a%20plugin)
-- [Obsidian plugin submission requirements](https://docs.obsidian.md/Community%20directory/Submission%20requirements%20for%20plugins)
+- [Obsidian plugin submission requirements](https://docs.obsidian.md/community-directory/submission-requirements-for-plugins)
 - [Obsidian Secret storage](https://docs.obsidian.md/Plugins/Guides/Store%20secrets)
 - [Basecamp rich-text HTML and attachments](https://github.com/basecamp/bc-api/blob/master/sections/rich_text.md)
 - [Basecamp authentication](https://github.com/basecamp/bc-api/blob/master/sections/authentication.md)

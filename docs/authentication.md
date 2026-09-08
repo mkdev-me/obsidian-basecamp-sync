@@ -6,18 +6,18 @@ The official [SDK authentication guide](https://github.com/basecamp/basecamp-sdk
 
 Basecamp's API and SDK documentation currently disagree about personal access tokens. The plugin accepts an existing bearer token if you already have one, but does not claim a universally available personal-token creation workflow.
 
-Ordinary users do **not** need their own OAuth app. The mkdev integration was registered and deployed on 2026-09-07 at `https://basecamp-obsidian-sync.fodoj.com`. Its HTTPS health check and login-start routing pass. The plugin fills in this URL automatically, including when upgrading an installation with an empty saved URL. Custom service URLs are preserved. Live desktop login was verified, and the maintainer confirmed iOS syncing works after its initial sign-in on 2026-09-08. Live token-renewal checks remain in [the release checklist](releasing.md).
+Ordinary users do **not** need their own OAuth app. The mkdev integration was registered and deployed on 2026-09-07 at `https://basecamp-obsidian-sync.fodoj.com`. Its HTTPS health check and login-start routing pass. The plugin fills in this URL automatically, including when upgrading an installation with an empty saved URL. Custom service URLs are preserved. Live desktop login was verified, and the maintainer confirmed iOS syncing works after its initial sign-in on 2026-09-08. See [the release checklist](releasing.md) for the acceptance record.
 
 ## Maintainer: prepare the shared mkdev integration
 
-The shared integration uses one stateless Cloudflare Worker in [fodoj-com](https://github.com/FJCorp/fodoj-com/tree/main/services/basecamp-obsidian-sync). [PR #5](https://github.com/FJCorp/fodoj-com/pull/5) is merged and the service is deployed. This plugin repository does not maintain a second server implementation.
+The shared integration uses one stateless Cloudflare Worker in [fodoj-com](https://github.com/FJCorp/fodoj-com/tree/main/services/basecamp-obsidian-sync), a private infrastructure repository accessible to its maintainers. Its implementation is not included in this open-source plugin. The following deployment steps are for maintainers with access; ordinary users can use the hosted service or the **My own integration** instructions below.
 
 1. The shared [Basecamp Sync by mkdev app](https://launchpad.37signals.com/integrations/28850) is registered with callback `https://basecamp-obsidian-sync.fodoj.com/callback`. Register a separate app at [Launchpad integrations](https://launchpad.37signals.com/integrations) for your own deployment.
 2. Deploy the Worker using its README and set `BASECAMP_CLIENT_ID` and `BASECAMP_CLIENT_SECRET` as Cloudflare secrets. No database, migrations or scheduled jobs are needed. Never embed the app secret in the plugin.
 3. Check `/health`, then perform the desktop and physical iOS login, renewal and reconnection checks in [releasing.md](releasing.md). Use a test account to verify Basecamp's authorization-code expiry and reuse behavior; repeated exchange may invalidate previously issued tokens.
-4. `DEFAULT_BROKER_URL` points to `https://basecamp-obsidian-sync.fodoj.com`. Complete the real-client checks before a public stable release.
+4. `DEFAULT_BROKER_URL` points to `https://basecamp-obsidian-sync.fodoj.com`.
 
-For your own hosted integration, deploy the same Worker with your app credentials and HTTPS origin, then enter that address in the plugin.
+An organization with access to the Worker can deploy it with its own app credentials and HTTPS origin, then enter that address in the plugin. Other users can register their own integration and use the direct mode below; its static callback page is included in this public repository.
 
 ## How shared login works
 
@@ -46,7 +46,7 @@ Connect once on each device: vault sync carries your notes and plugin settings, 
 4. Enter the client ID. Use the **Client secret** control to create/select a secret in Obsidian Secret storage. Enter exactly the registered redirect URI.
 5. Click **Connect to Basecamp**, approve access, and return to Obsidian. The static page offers a return link and the plugin also accepts a pasted full callback URL.
 
-This direct mode stores **your own** integration secret on your device so the SDK can exchange and refresh tokens. Do not use it to distribute mkdev's shared secret. Organizations that want their secret to remain on a server can deploy the Worker with their own credentials and select the shared-service mode with its URL.
+This direct mode stores **your own** integration secret on your device so the SDK can exchange and refresh tokens without mkdev's hosted service. Do not use it to distribute mkdev's shared secret. An organization-operated compatible login service can keep its integration secret on a server; select the shared-service mode with its URL.
 
 Set up the client-secret entry and connect independently on every device. Changing a login method or integration calls for a new connection. Existing sessions retain their original service/credential reference for refresh; changing the visible service URL never silently forwards an existing refresh token elsewhere.
 
