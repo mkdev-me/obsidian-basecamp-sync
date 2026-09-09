@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.7
+
+- Preserve visible blank lines between paragraphs in Basecamp, including long notes, blockquotes and paragraphs within list items.
+- Apply the spacing fix to existing linked documents on their next sync, even when their note text is unchanged. Document identity and remote-edit conflict checks are preserved.
+
 ## 0.1.6
 
 - Prepare the first public release with account, network and hosted-service disclosures.

@@ -45,7 +45,9 @@ export async function renderNote(markdown: string, options: RenderOptions): Prom
     return true;
   });
   md.renderer.rules.paragraph_open = () => '<div>';
-  md.renderer.rules.paragraph_close = () => '</div>\n';
+  // Basecamp gives divs no paragraph margins, so blank lines must be explicit.
+  md.renderer.rules.paragraph_close = (tokens, index) =>
+    tokens[index + 1]?.type === 'paragraph_open' ? '</div>\n<div><br></div>\n' : '</div>\n';
   md.renderer.rules.heading_open = () => '<h1>';
   md.renderer.rules.heading_close = () => '</h1>\n';
   md.renderer.rules.code_inline = (tokens, index) => `<strong>${escape(tokens[index]!.content)}</strong>`;
@@ -128,7 +130,7 @@ export async function renderNote(markdown: string, options: RenderOptions): Prom
     tokens.splice(i + 1, end - i);
   }
   const html = md.renderer.render(tokens, md.options, {});
-  // Changing the fingerprint also refreshes unchanged notes published with the old footer.
+  // Formatting changes also refresh already-synced notes whose Markdown is unchanged.
   const hash = await sha256(JSON.stringify([html, dependencies]));
   return { html, hash, warnings: [...warnings] };
 }
