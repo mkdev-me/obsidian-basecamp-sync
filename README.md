@@ -134,6 +134,7 @@ Copying a note also copies its identity. Remove `basecamp_sync` from the **copy*
 
 | Obsidian content | Basecamp result |
 | --- | --- |
+| Paragraphs and line breaks | Blank lines between paragraphs; single newlines remain line breaks |
 | Headings | Basecamp heading style; heading levels flatten because its documented HTML subset only includes `h1` |
 | Bold, italic, strike, lists, quotes | Native rich text |
 | Task lists | Readable checked/unchecked symbols; not Basecamp to-dos |

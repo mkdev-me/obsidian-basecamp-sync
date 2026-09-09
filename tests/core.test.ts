@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DEFAULT_SETTINGS, type Binding, type Note, parseBinding, stripFrontmatter } from '../src/model';
+import { DEFAULT_SETTINGS, type Binding, type Note, parseBinding, sha256, stripFrontmatter } from '../src/model';
 import type { Gateway, RemoteDocument } from '../src/basecamp';
 import { relativeNotePath, selection } from '../src/selection';
 import { renderNote } from '../src/render';
@@ -86,6 +86,22 @@ describe('selection and metadata', () => {
 });
 
 describe('formatted content', () => {
+  it('keeps blank lines between long paragraphs and single breaks within a paragraph', async () => {
+    const paragraph = 'A long paragraph with words that wrap across many lines. '.repeat(80).trim();
+    const result = await renderNote(`${paragraph}\n\nSecond **paragraph**.\nSame paragraph.\n\nLast paragraph.`,
+      { resolve: async () => ({}) });
+    expect(result.html).toBe(`<div>${paragraph}</div>\n<div><br></div>\n` +
+      '<div>Second <strong>paragraph</strong>.<br>\nSame paragraph.</div>\n<div><br></div>\n' +
+      '<div>Last paragraph.</div>\n');
+  });
+  it('spaces paragraphs inside quotes and list items without adding gaps between list items', async () => {
+    const result = await renderNote('> First paragraph.\n>\n> Second paragraph.\n\n' +
+      '- First item.\n\n  Another paragraph.\n- Second item.', { resolve: async () => ({}) });
+    expect(result.html.match(/<div><br><\/div>/g)).toHaveLength(2);
+    expect(result.html).toContain('<div>First paragraph.</div>\n<div><br></div>\n<div>Second paragraph.</div>');
+    expect(result.html).toContain('<div>First item.</div>\n<div><br></div>\n<div>Another paragraph.</div>');
+    expect(result.html).toContain('</li>\n<li>\n<div>Second item.</div>\n</li>');
+  });
   it('uses only supported formatting and keeps table links', async () => {
     const rendered = await renderNote('## Heading\n\n**Bold** *italic* ~~strike~~ `code`\n\n- [x] Done\n\n```ts\n<x>\n```\n\n| Name | Link |\n|---|---|\n| Alice | [Page](https://example.com) |',
       { resolve: async () => ({}) });
@@ -144,6 +160,24 @@ describe('formatted content', () => {
 });
 
 describe('sync engine', () => {
+  it('repairs paragraph spacing on the next sync without a note edit or a duplicate document', async () => {
+    const { engine, api, note, host, documents } = setup();
+    note.markdown = 'First paragraph.\n\nSecond paragraph.';
+    const currentRender = host.render;
+    const oldHtml = '<div>First paragraph.</div>\n<div>Second paragraph.</div>\n';
+    const oldHash = await sha256(JSON.stringify([oldHtml, []]));
+    host.render = async () => ({ html: oldHtml, hash: oldHash, warnings: [] });
+    await engine.run([note.path], []);
+
+    host.render = currentRender;
+    expect((await engine.run([note.path], [note]))[0]?.status).toBe('updated');
+    expect(documents.get(10)?.content).toContain('</div>\n<div><br></div>\n<div>Second paragraph.');
+    expect(note.markdown).toBe('First paragraph.\n\nSecond paragraph.');
+    expect(note.binding?.document).toBe(10);
+    expect((await engine.run([note.path], [note]))[0]?.status).toBe('unchanged');
+    expect(api.createDocument).toHaveBeenCalledTimes(1);
+    expect(api.updateDocument).toHaveBeenCalledTimes(1);
+  });
   it('removes the old footer from an unchanged note on its next sync, then returns to no-op updates', async () => {
     const { engine, api, note, documents } = await legacySetup();
     expect((await engine.run([note.path], [note]))[0]?.status).toBe('updated');
